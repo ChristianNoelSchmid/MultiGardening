@@ -1,0 +1,16 @@
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient.deps.json
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient.runtimeconfig.json
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient.runtimeconfig.dev.json
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient.dll
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/ref/GameClient.dll
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/bin/Debug/net5.0/GameClient.pdb
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.csprojAssemblyReference.cache
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.GeneratedMSBuildEditorConfig.editorconfig
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.AssemblyInfoInputs.cache
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.AssemblyInfo.cs
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.csproj.CoreCompileInputs.cache
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.dll
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/ref/GameClient.dll
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.pdb
+/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/Project/GameClient/obj/Debug/net5.0/GameClient.genruntimeconfig.cache
