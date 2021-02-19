@@ -2,10 +2,10 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using Server.Networking;
 
-namespace GameServer
+namespace Server
 {
     class Program
     {
@@ -32,7 +32,23 @@ namespace GameServer
         }
         static void Main(string[] args)
         {
+            var ev = NetworkEventParser.ParseNetworkEvent("Hello!");
+            Console.WriteLine(ParseEvent(ev)); 
+
             StartListener().GetAwaiter().GetResult();
+        }
+
+        private static string ParseEvent(Event ev)
+        {
+            switch(ev)
+            {
+                case PlayerLeft pl:
+                    return $"Caller info: {pl.CallerInfo.CallerId}";
+                case PlayerJoined pj:
+                    return $"Caller info: {pj.ActorMovement.Position}";
+                default: // null
+                    return "Could not parse value";
+            }   
         }
     }
 }
