@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj": {}
+    "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj": {}
   },
   "projects": {
-    "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj": {
+    "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj",
+        "projectUniqueName": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj",
         "projectName": "Server.Tests",
-        "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj",
+        "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj",
         "packagesPath": "/home/christian/.nuget/packages/",
-        "outputPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/obj/",
+        "outputPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/christian/.nuget/NuGet/NuGet.Config"
@@ -25,7 +25,11 @@
         "frameworks": {
           "net5.0": {
             "targetAlias": "net5.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj": {
+                "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
@@ -51,6 +55,58 @@
               "version": "[3.16.1, )"
             }
           },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/5.0.103/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj",
+        "projectName": "Server",
+        "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj",
+        "packagesPath": "/home/christian/.nuget/packages/",
+        "outputPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/christian/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net5.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net5.0": {
+            "targetAlias": "net5.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net5.0": {
+          "targetAlias": "net5.0",
           "imports": [
             "net461",
             "net462",

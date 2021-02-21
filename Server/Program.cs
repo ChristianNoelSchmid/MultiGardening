@@ -32,23 +32,7 @@ namespace Server
         }
         static void Main(string[] args)
         {
-            var ev = NetworkEventParser.ParseNetworkEvent("Hello!");
-            Console.WriteLine(ParseEvent(ev)); 
-
             StartListener().GetAwaiter().GetResult();
-        }
-
-        private static string ParseEvent(Event ev)
-        {
-            switch(ev)
-            {
-                case PlayerLeft pl:
-                    return $"Caller info: {pl.CallerInfo.CallerId}";
-                case PlayerJoined pj:
-                    return $"Caller info: {pj.ActorMovement.Position}";
-                default: // null
-                    return "Could not parse value";
-            }   
         }
     }
 }

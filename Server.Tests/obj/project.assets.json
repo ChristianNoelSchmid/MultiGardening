@@ -1225,6 +1225,16 @@
         "runtime": {
           "lib/netstandard1.3/System.Xml.XPath.XmlDocument.dll": {}
         }
+      },
+      "Server/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v5.0",
+        "compile": {
+          "bin/placeholder/Server.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Server.dll": {}
+        }
       }
     }
   },
@@ -4613,13 +4623,19 @@
         "system.xml.xpath.xmldocument.4.3.0.nupkg.sha512",
         "system.xml.xpath.xmldocument.nuspec"
       ]
+    },
+    "Server/1.0.0": {
+      "type": "project",
+      "path": "../Server/Server.csproj",
+      "msbuildProject": "../Server/Server.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net5.0": [
       "Microsoft.NET.Test.Sdk >= 16.5.0",
       "NUnit >= 3.12.0",
-      "NUnit3TestAdapter >= 3.16.1"
+      "NUnit3TestAdapter >= 3.16.1",
+      "Server >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -4628,11 +4644,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj",
+      "projectUniqueName": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj",
       "projectName": "Server.Tests",
-      "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/Server.Tests.csproj",
+      "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/Server.Tests.csproj",
       "packagesPath": "/home/christian/.nuget/packages/",
-      "outputPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.Tests/obj/",
+      "outputPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server.Tests/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/christian/.nuget/NuGet/NuGet.Config"
@@ -4646,7 +4662,11 @@
       "frameworks": {
         "net5.0": {
           "targetAlias": "net5.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj": {
+              "projectPath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

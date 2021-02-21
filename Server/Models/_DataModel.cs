@@ -1,7 +1,8 @@
 using System;
 
-namespace Server.Networking
+namespace Server.Models
 {
+    /* Serves as a wrapper for JSON objects being sent to and from server.  */
     public record DataModel
     {
         public string Secret { get; init; }
