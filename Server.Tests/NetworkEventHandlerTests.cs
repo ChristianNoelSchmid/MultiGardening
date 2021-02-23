@@ -12,7 +12,7 @@ namespace Server.Tests
     {
         private readonly Guid guid 
             = Guid.Parse("12345678-9101-1121-3141-516171819202");
-        private readonly NetworkEventHandler = new NetworkEventHandler();
+        private readonly NetworkEventHandler _handler = new NetworkEventHandler();
 
         [Test]
         public void TestPlayerJoinedParse()
@@ -31,7 +31,7 @@ namespace Server.Tests
                         IsFlipped = true
                     }
                 },
-                NetworkEventHandler.ParseEvent($"PlayerJoined::{ JsonSerializer.Serialize(playerJoined) }")
+                _handler.ParseEvent($"PlayerJoined::{ JsonSerializer.Serialize(playerJoined) }")
             );
         }
 
@@ -53,7 +53,7 @@ namespace Server.Tests
                         Secret = "Secret"
                     }
                 },
-                NetworkEventHandler.ParseEvent($"PlayerLeft::{ JsonSerializer.Serialize(playerLeft)} ")
+                _handler.ParseEvent($"PlayerLeft::{ JsonSerializer.Serialize(playerLeft)} ")
             );
         }
     
@@ -85,7 +85,7 @@ namespace Server.Tests
                         }
                     }
                 },
-                NetworkEventHandler.ParseEvent($"Tilled::{ JsonSerializer.Serialize(tilled) }")
+                _handler.ParseEvent($"Tilled::{ JsonSerializer.Serialize(tilled) }")
             );
         } 
     
@@ -119,7 +119,7 @@ namespace Server.Tests
                         }
                     }
                 },
-                NetworkEventHandler.ParseEvent($"Planted::{ JsonSerializer.Serialize(planted) }")
+                _handler.ParseEvent($"Planted::{ JsonSerializer.Serialize(planted) }")
             );
         }
     
@@ -143,7 +143,7 @@ namespace Server.Tests
                         Value = 3
                     }
                 },
-                NetworkEventHandler.ParseEvent($"Destroyed::{ JsonSerializer.Serialize(destroyed) }")
+                _handler.ParseEvent($"Destroyed::{ JsonSerializer.Serialize(destroyed) }")
             );
         } 
 
@@ -165,7 +165,7 @@ namespace Server.Tests
                         Secret = "Secret"
                     }
                 },
-                NetworkEventHandler.ParseEvent($"Pinged::{ JsonSerializer.Serialize(pinged) }")
+                _handler.ParseEvent($"Pinged::{ JsonSerializer.Serialize(pinged) }")
             );
         }
     }
