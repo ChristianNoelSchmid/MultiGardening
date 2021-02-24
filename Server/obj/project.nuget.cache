@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "gOYsMyKEdN/7D0n51uWDunNNjeYXO7Dr1sKAp4oT+mr6/iSi1qIgAgSpa6OpxtmhBCK0pGxpqid+fdYWRzk5QQ==",
+  "dgSpecHash": "tnHPFyHpm/0d66pm2gWTj/P9+7ONA+fdkKOPr5b0+oSxQMKdXRnNWyLKOMJ4ltxwRGl9Po1+9o7qi9PDvglWuA==",
   "success": true,
-  "projectFilePath": "/home/christian/Documents/Winter 2021/CS594 - Internetworking Protocols/MultiGardening/Server/Server.csproj",
+  "projectFilePath": "C:\\Users\\cschm\\source\\repos\\MultiGardening\\Server\\Server.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

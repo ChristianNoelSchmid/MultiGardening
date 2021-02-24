@@ -31,15 +31,12 @@ namespace Server.Networking
         /// </summary>
         /// <returns>Length of a network timeout - 1 second</returns>
         private readonly double timeout = Math.Pow(10.0, 7.0);
-        private Thread _listeningThread;
-        private Thread _resolverThread;
 
         /// <summary>
         /// The client for the UDP network. Handles sending and receiving
         /// of datagrams.
         /// </summary>
         private readonly UdpClient _client;
-        private IPHostEntry _hostEntry;
 
         /// <summary>
         /// Dictionary which contains all information about needed acknoledgements.
@@ -51,7 +48,7 @@ namespace Server.Networking
         /// value from the Dictionary.
         /// </summary>
         private ConcurrentDictionary<IPEndPoint, List<AckResolver>> _resolverBuffer;
-        private object _listLock = new object();
+        private readonly object _listLock = new object();
 
         /// <summary>
         /// A dictionary which holds a collection of client IPEndPoints,
@@ -60,14 +57,14 @@ namespace Server.Networking
         /// To ensure that datagrams which need acknowledgements are not lost 
         /// in the network.
         /// </summary>
-        private Dictionary<IPEndPoint, ulong> _ackRemoteToLocalIndices;
+        private Dictionary<IPEndPoint, ulong> _ackExpectedIndices;
 
         /// <summary>
         /// Represents the indices of the local client's current index count
         /// of ack datagrams, per connection. A dictionary is needed as the local
         /// client may send different amounts of ensured datagrams to each client.
         /// </summary>
-        private Dictionary<IPEndPoint, ulong> _ackLocalToRemoteIndices;
+        private Dictionary<IPEndPoint, ulong> _ackCurrentIndices;
 
         public EventHandler<DatagramCallback> MessageRecieved;
         public bool IsListening { get; set; } = true;
@@ -85,8 +82,8 @@ namespace Server.Networking
             _client = new UdpClient(port);
 
             _resolverBuffer = new ConcurrentDictionary<IPEndPoint, List<AckResolver>>();
-            _ackLocalToRemoteIndices = new Dictionary<IPEndPoint, ulong>();
-            _ackRemoteToLocalIndices = new Dictionary<IPEndPoint, ulong>();
+            _ackCurrentIndices = new Dictionary<IPEndPoint, ulong>();
+            _ackExpectedIndices = new Dictionary<IPEndPoint, ulong>();
 
             // Start the AckResolver
             new Thread(StartAckResolver){ IsBackground = true }.Start();
@@ -117,7 +114,7 @@ namespace Server.Networking
 
                     // Update the _ackLocalToRemoteCounts to reflect the new
                     // # of reliable messages sent to specific client (+ 1)
-                    if(!_ackLocalToRemoteIndices.TryGetValue(endPoint, out ackIndex))
+                    if(!_ackCurrentIndices.TryGetValue(endPoint, out ackIndex))
                         ackIndex = 0;
 
                     // Append the ack index count to the message, to communicate to the
@@ -136,7 +133,7 @@ namespace Server.Networking
                         }
                     );
 
-                    _ackLocalToRemoteIndices[endPoint] = ackIndex + 1;
+                    _ackCurrentIndices[endPoint] = ackIndex + 1;
                 }
                 else
                     msgBytes = Encoding.ASCII.GetBytes(Unreliable.CreateString(message));
@@ -260,7 +257,7 @@ namespace Server.Networking
                 if(!IsListening) continue;
 
                 datagram = ParseDatagram(bytes);
-                _ackRemoteToLocalIndices.TryGetValue(endPoint, out ackExpected);
+                _ackExpectedIndices.TryGetValue(endPoint, out ackExpected);
 
 
                 switch(datagram)
@@ -278,14 +275,14 @@ namespace Server.Networking
                     // Message is reliable, and was the expected index.
                     // Accept message, send ACK, and invoke MessageRecieved event
                     case Reliable rel:
-                        _ackRemoteToLocalIndices[endPoint] = ackExpected + 1;
+                        _ackExpectedIndices[endPoint] = ackExpected + 1;
                         SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);
                         MessageRecieved.Invoke(null, new DatagramCallback
                         {
                             Data = rel.Data,
                             SendToCaller = (data, isRel) => SendMessage(data, isRel, endPoint),
                             SendToOthers = (data, isRel) => SendMessage(
-                                    data, isRel, _ackRemoteToLocalIndices
+                                    data, isRel, _ackExpectedIndices
                                         .Keys.Where(k => k != endPoint).ToArray()
                                     )
                         });                                                             break;
@@ -305,7 +302,7 @@ namespace Server.Networking
                             Data = unrel.Data,
                             SendToCaller = (data, isRel) => SendMessage(data, isRel, endPoint),
                             SendToOthers = (data, isRel) => SendMessage(
-                                    data, isRel, _ackRemoteToLocalIndices
+                                    data, isRel, _ackExpectedIndices
                                         .Keys.Where(k => k != endPoint).ToArray()
                                     )
                         });                                                             break; 
