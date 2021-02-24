@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public Pinged() => CallerInfo = null;
         public Pinged(string value) => 
             CallerInfo = JsonSerializer.Deserialize<DataModel<ActorMovement>>(value);
+
+        public string CreateString() => $"Pinged::{JsonSerializer.Serialize(this)}";
     }
 }

@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public Tilled() => Position = null;
         public Tilled(string value) =>
             Position = JsonSerializer.Deserialize<DataModel<GridPosition>>(value);
+
+        public string CreateString() => $"Tilled::{JsonSerializer.Serialize(this)}";
     }
 }

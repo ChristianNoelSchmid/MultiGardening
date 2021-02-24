@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public Planted() => Placement = null;
         public Planted(string value) =>
             Placement = JsonSerializer.Deserialize<DataModel<PlantPlacement>>(value);
+
+        public string CreateString() => $"Planted::{JsonSerializer.Serialize(this)}";
     }
 }

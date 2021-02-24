@@ -99,6 +99,7 @@ namespace Server.Networking
         /// <param name="endPoints">The client(s) to send the datagram to</param>
         public void SendMessage(string message, bool isReliable, params IPEndPoint[] endPoints)
         {
+            Console.WriteLine($"Sending message: {message}");
             List<AckResolver> ackList;
             ulong ackIndex;
             byte[] msgBytes; 
@@ -284,7 +285,8 @@ namespace Server.Networking
                             SendToOthers = (data, isRel) => SendMessage(
                                     data, isRel, _ackExpectedIndices
                                         .Keys.Where(k => k != endPoint).ToArray()
-                                    )
+                                    ),
+                            SendToAll    = (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices.Keys.ToArray())
                         });                                                             break;
 
                     // Message contains request to resend packages
@@ -304,7 +306,8 @@ namespace Server.Networking
                             SendToOthers = (data, isRel) => SendMessage(
                                     data, isRel, _ackExpectedIndices
                                         .Keys.Where(k => k != endPoint).ToArray()
-                                    )
+                                    ),
+                            SendToAll    = (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices.Keys.ToArray())
                         });                                                             break; 
                 }
             }

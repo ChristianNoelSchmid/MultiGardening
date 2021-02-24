@@ -8,7 +8,11 @@ namespace Server.Networking
 {
     public class NetworkEventHandler
     {
-        private ImmutableHashSet<Guid> _clientIds;
+        private ImmutableHashSet<int> _clientIds;
+
+        private int _clientId = 0;
+
+        public NetworkEventHandler() => _clientIds = ImmutableHashSet<int>.Empty;
 
         /// <summary>
         /// Converts incoming text into an appropriate
@@ -16,6 +20,7 @@ namespace Server.Networking
         /// </summary>
         /// <param name="text">The string to parse</param>
         /// <returns></returns>
+        
         private NetworkEvent ParseEvent(string text)
         {
             var args = text.Split("::"); 
@@ -36,18 +41,20 @@ namespace Server.Networking
             switch (ParseEvent(callback.Data))
             {
                 case PlayerJoined joined:
-                    var newId = Guid.NewGuid();
-                    _clientIds = _clientIds.Add(newId);
+                    _clientIds = _clientIds.Add(_clientId);
 
                     callback.SendToCaller(
-                        JsonSerializer.Serialize(
-                            new DataModel
+                        new Welcome
+                        {
+                            DataModel = new DataModel
                             {
-                                CallerId = newId,
+                                CallerId = _clientId,
                                 Secret = "Secret"
                             }
-                        ), true
+                        }.CreateString(), true
                     );
+
+                    ++_clientId;
                     break;
                 case Pinged pinged: callback.SendToOthers(callback.Data, false); break;
                 default: return;

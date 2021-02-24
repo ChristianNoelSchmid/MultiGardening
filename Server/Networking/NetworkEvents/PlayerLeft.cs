@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public PlayerLeft() => CallerInfo = null;
         public PlayerLeft(string value) =>
             CallerInfo = JsonSerializer.Deserialize<DataModel>(value);
+
+        public string CreateString() => $"PlayerLeft::{JsonSerializer.Serialize(this)}";
     }
 }

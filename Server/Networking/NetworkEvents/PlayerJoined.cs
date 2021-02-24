@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public PlayerJoined() => ActorMovement = null;
         public PlayerJoined(string value) => 
             ActorMovement = JsonSerializer.Deserialize<ActorMovement>(value);
+
+        public string CreateString() => $"PlayerJoined::{JsonSerializer.Serialize(this)}";
     }
 }

@@ -10,5 +10,7 @@ namespace Server.Networking.NetworkEvents
         public Destroyed() => PlantIndex = null;
         public Destroyed(string value) =>
             PlantIndex = JsonSerializer.Deserialize<DataModel<uint>>(value);
+
+        public string CreateString() => $"Destroyed::{JsonSerializer.Serialize(this)}";
     }
 }
