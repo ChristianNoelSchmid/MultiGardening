@@ -8,9 +8,16 @@ namespace Server.Networking.NetworkEvents
         public DataModel CallerInfo { get; init; }
 
         public PlayerLeft() => CallerInfo = null;
-        public PlayerLeft(string value) =>
-            CallerInfo = JsonSerializer.Deserialize<DataModel>(value);
+        public PlayerLeft(string value) 
+        {
+            string [] args = value.Split('#');
+            CallerInfo = new DataModel
+            {
+                CallerId = int.Parse(args[0]),
+                Secret = args[1]
+            };
+        }
 
-        public string CreateString() => $"PlayerLeft::{JsonSerializer.Serialize(this)}";
+        public string CreateString() => $"PlayerLeft::{CallerInfo.Serialize()}";
     }
 }

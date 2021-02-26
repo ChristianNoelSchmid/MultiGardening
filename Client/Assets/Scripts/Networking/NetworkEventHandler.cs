@@ -108,6 +108,9 @@ namespace Server.Networking
                     break;
                 case Pinged pinged:
                     int id = pinged.CallerInfo.CallerId;
+                    if(pinged.CallerInfo.CallerId == _playerId)
+                        break;
+
                     if (!_remoteMovements.ContainsKey(id))
                     {
                         _templateRemoteMovement.gameObject.SetActive(true);

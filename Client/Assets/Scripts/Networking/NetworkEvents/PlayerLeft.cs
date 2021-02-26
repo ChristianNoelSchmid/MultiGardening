@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Server.Models;
 
 namespace Server.Networking.NetworkEvents
@@ -8,9 +7,16 @@ namespace Server.Networking.NetworkEvents
         public DataModel CallerInfo { get; set; }
 
         public PlayerLeft() => CallerInfo = null;
-        public PlayerLeft(string value) =>
-            CallerInfo = JsonConvert.DeserializeObject<DataModel>(value);
+        public PlayerLeft(string value) 
+        {
+            string [] args = value.Split('#');
+            CallerInfo = new DataModel
+            {
+                CallerId = int.Parse(args[0]),
+                Secret = args[1]
+            };
+        }
 
-        public string CreateString() => $"PlayerLeft::{JsonConvert.SerializeObject(this)}";
+        public string CreateString() => $"PlayerLeft::{CallerInfo.Serialize()}";
     }
 }

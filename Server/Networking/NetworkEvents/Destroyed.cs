@@ -5,12 +5,20 @@ namespace Server.Networking.NetworkEvents
 {
     public record Destroyed : NetworkEvent
     {
-        public DataModel<uint> PlantIndex { get; init; }
+        public DataModel<IdModel> PlantIndex { get; init; }
 
         public Destroyed() => PlantIndex = null;
-        public Destroyed(string value) =>
-            PlantIndex = JsonSerializer.Deserialize<DataModel<uint>>(value);
+        public Destroyed(string value) 
+        {
+            string [] args = value.Split('#');
+            PlantIndex = new DataModel<IdModel>
+            {
+                CallerId = int.Parse(args[0]),
+                Secret = args[1],
+                Value = new IdModel { Id = uint.Parse(args[2]) }
+            };
+        }
 
-        public string CreateString() => $"Destroyed::{JsonSerializer.Serialize(this)}";
+        public string CreateString() => $"Destroyed::{PlantIndex.Serialize()}";
     }
 }

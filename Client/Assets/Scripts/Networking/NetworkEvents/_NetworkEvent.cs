@@ -1,5 +1,4 @@
-
-using Newtonsoft.Json;
+using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {

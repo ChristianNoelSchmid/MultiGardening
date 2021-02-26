@@ -1,8 +1,6 @@
 using Server.Models;
 using Server.Networking.NetworkEvents;
-using System;
 using System.Collections.Immutable;
-using System.Text.Json;
 
 namespace Server.Networking
 {
@@ -10,7 +8,7 @@ namespace Server.Networking
     {
         private ImmutableHashSet<int> _clientIds;
 
-        private int _clientId = 0;
+        private int _clientId = 1;
 
         public NetworkEventHandler() => _clientIds = ImmutableHashSet<int>.Empty;
 
