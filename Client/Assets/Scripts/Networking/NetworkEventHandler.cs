@@ -19,12 +19,12 @@ namespace Server.Networking
         private float _playerUpdateIntevalSeconds = 0.1f;
 
         [SerializeField]
-        private Rigidbody2D _playerRb2d;
-        private int _playerId;
+        private PlayerConnections _playerConnections;
 
         [SerializeField]
-        private RemoteMovement _templateRemoteMovement;
-        private Dictionary<int, RemoteMovement> _remoteMovements;
+        private Transform _playerTransform;
+        private int _playerId;
+
         private Queue<DatagramCallback> _callbackQueue;
 
         private void Awake()
@@ -38,7 +38,6 @@ namespace Server.Networking
                 _callbackQueue.Enqueue(callback);
             };
             _callbackQueue = new Queue<DatagramCallback>();
-            _remoteMovements = new Dictionary<int, RemoteMovement>();
         }
 
         private void Start()
@@ -50,12 +49,11 @@ namespace Server.Networking
                 {
                     ActorMovement = new ActorMovement
                     {
-                        Position = Tuple.Create(0f, 0f),
+                        Position = Tuple.Create(_playerTransform.position.x, _playerTransform.position.y),
                         IsFlipped = false
                     }
                 }.CreateString(), true
             );
-            _templateRemoteMovement.gameObject.SetActive(false);
         }
 
         private void Update()
@@ -80,7 +78,7 @@ namespace Server.Networking
                             Secret = "Secret",
                             Value = new ActorMovement
                             {
-                                Position = Tuple.Create(_playerRb2d.position.x, _playerRb2d.position.y),
+                                Position = Tuple.Create(_playerTransform.position.x, _playerTransform.position.y),
                                 IsFlipped = false
                             }
                         }
@@ -116,25 +114,15 @@ namespace Server.Networking
             switch(ParseEvent(callback.Data))
             {
                 case Welcome welcome: 
+
                     _playerId = welcome.DataModel.CallerId;
-                    StartCoroutine(BeginTransfer());
-                    break;
+                    StartCoroutine(BeginTransfer());            break;
+
                 case Pinged pinged:
-                    int id = pinged.CallerInfo.CallerId;
-                    if(pinged.CallerInfo.CallerId == _playerId)
-                        break;
 
-                    if (!_remoteMovements.ContainsKey(id))
-                    {
-                        _templateRemoteMovement.gameObject.SetActive(true);
-                        var newRemote = Instantiate(_templateRemoteMovement.gameObject, null).GetComponent<RemoteMovement>();
-                        _templateRemoteMovement.gameObject.SetActive(false);
+                    if(pinged.CallerInfo.CallerId == _playerId) return;
+                    _playerConnections.UpdateMarker(pinged);    break;
 
-                        _remoteMovements.Add(id, newRemote);
-                    }
-
-                    _remoteMovements[id].SetActorMovement(pinged.CallerInfo.Value);
-                    break;
             }
         }
     }
