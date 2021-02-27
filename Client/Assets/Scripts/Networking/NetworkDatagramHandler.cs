@@ -47,13 +47,13 @@ namespace Server.Networking
         private UdpClient _client;
 
         /// <summary>
-        /// Dictionary which contains all information about needed acknoledgements.
+        /// List which contains all information about needed acknoledgements.
         /// Ensures specific messages are sent. When an ensured message is sent,
-        /// it's ID (ulong) is stored in this Dictionary, as well as the time at
-        /// which it was sent. Periodically, this Dictionary is checked and, upon
+        /// it's ID (ulong) is stored in this List, as well as the time at
+        /// which it was sent. Periodically, this List is checked and, upon
         /// a time which a values been in it longer than a specified timeout,
-        /// it resends the message. Acknowledgements that do come remove the
-        /// value from the Dictionary.
+        /// it resends all resolver messages. Acknowledgements that do come remove the
+        /// value from the List.
         /// </summary>
         private List<AckResolver> _resolverBuffer;
         private readonly object _listLock = new object();
@@ -179,12 +179,14 @@ namespace Server.Networking
 
         private void AcceptAck(ulong ack)
         {
+            Debug.Log($"Recieved acknowledgement {ack} from the server. Removing");
             int index;
             lock(_listLock)
             {
                 index = _resolverBuffer.FindIndex(res => res.AckIndex == ack);
                 if(index != -1) _resolverBuffer.RemoveAt(index);
             }
+            Debug.Log($"Resolver buffer size: {_resolverBuffer.Count}");
         }
 
         /// <summary>

@@ -10,7 +10,13 @@ namespace Server.Networking
     public class NetworkEventHandler : MonoBehaviour
     {
         private NetworkDatagramHandler _datagramHandler;
-        private readonly WaitForSeconds _waitForTenthOfSecond = new WaitForSeconds(0.1f);
+        private WaitForSeconds _waitForInterval;
+
+        [SerializeField]
+        private bool _networkingEnabled = true;
+
+        [SerializeField]
+        private float _playerUpdateIntevalSeconds = 0.1f;
 
         [SerializeField]
         private Rigidbody2D _playerRb2d;
@@ -23,6 +29,9 @@ namespace Server.Networking
 
         private void Awake()
         {
+            if(!_networkingEnabled) return;
+
+            _waitForInterval = new WaitForSeconds(_playerUpdateIntevalSeconds);
             _datagramHandler = GetComponent<NetworkDatagramHandler>();
             _datagramHandler.MessageRecieved += (_, callback) =>
             {
@@ -34,6 +43,8 @@ namespace Server.Networking
 
         private void Start()
         {
+            if(!_networkingEnabled) return;            
+
             _datagramHandler.SendDatagram(
                 new PlayerJoined
                 {
@@ -49,6 +60,8 @@ namespace Server.Networking
 
         private void Update()
         {
+            if(!_networkingEnabled) return;
+
             while(_callbackQueue.Count > 0)
                 TransferEvent(_callbackQueue.Dequeue());
         }
@@ -57,7 +70,7 @@ namespace Server.Networking
         {
             while(true)
             {
-                yield return _waitForTenthOfSecond;
+                yield return _waitForInterval;
                 _datagramHandler.SendDatagram(
                     new Pinged
                     {
