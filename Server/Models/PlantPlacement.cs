@@ -1,12 +1,19 @@
 namespace Server.Models
 {
+    /// <summary>
+    /// All plant placement state, regarding when and where a Client
+    /// places a plant. Forwarded to other clients, and used to
+    /// check placement in the future, and placement of critters.
+    /// </summary>
     public record PlantPlacement : ISerializable
     {
-        public GridPosition GridStart { get; init; }
-        public GridPosition GridEnd { get; init; }
+        public GridPosition Position { get; init; }
         public uint PlantType { get; init; }
 
+        // Represents the total seconds (since 1970) to the point
+        // when the plant is fully grown. 
+        public double FullGrownAtSeconds { get; init; }
         public string Serialize() =>
-            $"{GridStart.Serialize()}#{GridEnd.Serialize()}#{PlantType}";
+            $"{Position.Serialize()}#{PlantType}#{FullGrownAtSeconds}";
     }
 }

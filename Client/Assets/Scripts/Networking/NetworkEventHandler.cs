@@ -15,15 +15,19 @@ namespace Server.Networking
         [SerializeField]
         private bool _networkingEnabled = true;
 
-        [SerializeField]
-        private float _playerUpdateIntevalSeconds = 0.1f;
+        private const float _playerUpdateIntevalSeconds = 0.1f;
 
         [SerializeField]
         private PlayerConnections _playerConnections;
 
         [SerializeField]
+        private PlantPlacements _plantPlacements;
+
+        [SerializeField]
         private Transform _playerTransform;
+
         private int _playerId;
+        private string _secret;
 
         private Queue<DatagramCallback> _callbackQueue;
 
@@ -72,14 +76,14 @@ namespace Server.Networking
                 _datagramHandler.SendDatagram(
                     new Pinged
                     {
-                        CallerInfo = new DataModel<ActorMovement>
+                        CallerInfo = new DataModel<GridPosition>
                         {
                             CallerId = _playerId,
                             Secret = "Secret",
-                            Value = new ActorMovement
+                            Value = new GridPosition
                             {
-                                Position = Tuple.Create(_playerTransform.position.x, _playerTransform.position.y),
-                                IsFlipped = false
+                                X = PlayerControls.GridPosition.x, 
+                                Y = PlayerControls.GridPosition.y
                             }
                         }
                     }.CreateString(), false
@@ -92,7 +96,7 @@ namespace Server.Networking
         /// NetworkEvent.
         /// </summary>
         /// <param name="text">The string to parse</param>
-        /// <returns></returns>
+        /// <returns>The NetworkEvent, with parsed data</returns>
         private NetworkEvent ParseEvent(string text)
         {
             var args = text.Split(new string[] { "::" }, StringSplitOptions.None); 
@@ -116,14 +120,34 @@ namespace Server.Networking
                 case Welcome welcome: 
 
                     _playerId = welcome.DataModel.CallerId;
-                    StartCoroutine(BeginTransfer());            break;
+                    _secret = welcome.DataModel.Secret;
+                    StartCoroutine(BeginTransfer());                    break;
 
                 case Pinged pinged:
 
-                    if(pinged.CallerInfo.CallerId == _playerId) return;
-                    _playerConnections.UpdateMarker(pinged);    break;
+                    if(pinged.CallerInfo.CallerId == _playerId)         return;
+                    _playerConnections.UpdateMarker(pinged);            break;
+
+                case Planted planted:
+
+                    _plantPlacements.Place(planted.Placement.Value);    break;
 
             }
         }
+
+        #region public methods
+        public void TryPlantPlacement(PlantPlacement placement) =>
+            _datagramHandler.SendDatagram(
+                new Planted
+                {
+                    Placement = new DataModel<PlantPlacement>
+                    {
+                        CallerId = _playerId,
+                        Secret = _secret,
+                        Value = placement
+                    }
+                }.CreateString(), true
+            );
+        #endregion
     }
 }

@@ -20,5 +20,9 @@ MonoBehaviour:
       type: 3}
     timeIntervalSec: 5
     minSize: 1
+  - sprite: {fileID: 5388332234062600340, guid: 30e031b659aacd46b8abd95dee7b4edf,
+      type: 3}
+    timeIntervalSec: 5
+    minSize: 0.25
   _finalSprite: {fileID: 5388332234062600340, guid: 30e031b659aacd46b8abd95dee7b4edf,
     type: 3}

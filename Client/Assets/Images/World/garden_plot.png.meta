@@ -5,6 +5,9 @@ TextureImporter:
   - first:
       213: 5504004376394028318
     second: garden_plot_0
+  - first:
+      213: 1640786372910767012
+    second: garden_plot_1
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -49,7 +52,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 200
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -102,7 +105,7 @@ TextureImporter:
         width: 601
         height: 601
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -110,6 +113,27 @@ TextureImporter:
       bones: []
       spriteID: e155921a1d6226c40800000000000000
       internalID: 5504004376394028318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: garden_plot_1
+      rect:
+        serializedVersion: 2
+        x: 589
+        y: 617
+        width: 597
+        height: 59
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4abd5ad438e35c610800000000000000
+      internalID: 1640786372910767012
       vertices: []
       indices: 
       edges: []

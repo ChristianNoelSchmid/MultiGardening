@@ -7,10 +7,15 @@ namespace Server.Networking
     public class NetworkEventHandler
     {
         private ImmutableHashSet<int> _clientIds;
+        private State _state;
 
         private int _clientId = 1;
 
-        public NetworkEventHandler() => _clientIds = ImmutableHashSet<int>.Empty;
+        public NetworkEventHandler() 
+        {
+            _clientIds = ImmutableHashSet<int>.Empty;
+            _state = new State();
+        }
 
         /// <summary>
         /// Converts incoming text into an appropriate
@@ -52,9 +57,15 @@ namespace Server.Networking
                         }.CreateString(), true
                     );
 
-                    ++_clientId;
-                    break;
-                case Pinged pinged: callback.SendToOthers(callback.Data, false); break;
+                    ++_clientId;                                    break;
+
+                case Pinged pinged: 
+                    callback.SendToOthers(callback.Data, false);    break;
+
+                case Planted planted: 
+                    if(_state.TryAddPlant(planted.Placement.Value))
+                        callback.SendToAll(callback.Data, true);    break;
+
                 default: return;
             };
         }

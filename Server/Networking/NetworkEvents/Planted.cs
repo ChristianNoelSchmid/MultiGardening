@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Server.Models;
 
 namespace Server.Networking.NetworkEvents
@@ -17,17 +16,13 @@ namespace Server.Networking.NetworkEvents
                 Secret = args[1],
                 Value = new PlantPlacement
                 {
-                    GridStart = new GridPosition
+                    Position = new GridPosition
                     {
                         X = int.Parse(args[2]),
                         Y = int.Parse(args[3])
                     },
-                    GridEnd = new GridPosition
-                    {
-                        X = int.Parse(args[4]),
-                        Y = int.Parse(args[5])
-                    },
-                    PlantType = uint.Parse(args[6])
+                    PlantType = uint.Parse(args[4]),
+                    FullGrownAtSeconds = double.Parse(args[5])
                 }
             };
         }

@@ -5,20 +5,20 @@ namespace Server.Networking.NetworkEvents
 {
     public class Pinged : NetworkEvent
     {
-        public DataModel<ActorMovement> CallerInfo { get; set; }
+        public DataModel<GridPosition> CallerInfo { get; set; }
 
         public Pinged() => CallerInfo = null;
         public Pinged(string value)
         {
             string [] args = value.Split('#');
-            CallerInfo = new DataModel<ActorMovement>
+            CallerInfo = new DataModel<GridPosition>
             {
                 CallerId = int.Parse(args[0]),
                 Secret = args[1],
-                Value = new ActorMovement
+                Value = new GridPosition
                 {
-                    Position = Tuple.Create(float.Parse(args[2]), float.Parse(args[3])),
-                    IsFlipped = bool.Parse(args[4])
+                    X = int.Parse(args[2]),
+                    Y = int.Parse(args[3])
                 } 
             };
         }
