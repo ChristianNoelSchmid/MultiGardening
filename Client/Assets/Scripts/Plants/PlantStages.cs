@@ -5,6 +5,6 @@ using UnityEngine;
 public struct PlantStage
 {
     public Sprite sprite;
-    public double timeIntervalSec;
+    public float timeIntervalSec;
     public float minSize;
 }

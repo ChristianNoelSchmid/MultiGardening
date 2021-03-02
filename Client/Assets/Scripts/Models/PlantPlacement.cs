@@ -1,3 +1,5 @@
+using System;
+
 namespace Server.Models
 {
     public class PlantPlacement : ISerializable
@@ -6,9 +8,10 @@ namespace Server.Models
         public uint PlantType { get; set; }
 
         // Represents the total seconds (since 1970) to the point
-        // when the plant is fully grown. 
-        public double FullGrownAtSeconds { get; set; }
+        // when the plan
+        public DateTime TimeToComplete { get; set; }
+
         public string Serialize() =>
-            $"{Position.Serialize()}#{PlantType}#{FullGrownAtSeconds}";
+            $"{Position.Serialize()}#{PlantType}#{TimeToComplete.ToString("yyyy-MM-dd HH:mm:ss")}";
     }
 }

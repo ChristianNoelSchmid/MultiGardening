@@ -1,11 +1,16 @@
+using System.Diagnostics;
 using Server.Models;
 using Server.Networking.NetworkEvents;
 using System.Collections.Immutable;
+using System;
 
 namespace Server.Networking
 {
     public class NetworkEventHandler
     {
+        private readonly float[] _plantSecondsToAdd = new float [] {
+            10, 10, 15
+        };
         private ImmutableHashSet<int> _clientIds;
         private State _state;
 
@@ -32,10 +37,10 @@ namespace Server.Networking
             {
                 "PlayerJoined" => new PlayerJoined(args[1]),
                 "PlayerLeft" => new PlayerLeft(args[1]),
-                "Tilled" => new Tilled(args[1]),
                 "Planted" => new Planted(args[1]),
-                "Destroyed" => new Destroyed(args[1]),
                 "Pinged" => new Pinged(args[1]),
+                "CreatedCritter" => new CreatedCritter(args[1]),
+                "MovedCritter" => new MovedCritter(args[1]),
                 _ => null
             };
         }
@@ -64,7 +69,16 @@ namespace Server.Networking
 
                 case Planted planted: 
                     if(_state.TryAddPlant(planted.Placement.Value))
-                        callback.SendToAll(callback.Data, true);    break;
+                    {
+                        callback.SendToAll((
+                            planted with {
+                                Placement = planted.Placement with {
+                                    Value = planted.Placement.Value with {
+                                        TimeToComplete = DateTime.UtcNow.AddSeconds
+                                            (_plantSecondsToAdd[planted.Placement.Value.PlantType])
+                            } } }
+                        ).CreateString(), true);    
+                    }                                               break;
 
                 default: return;
             };

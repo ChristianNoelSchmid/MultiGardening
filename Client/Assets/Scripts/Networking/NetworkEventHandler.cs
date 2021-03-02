@@ -105,9 +105,7 @@ namespace Server.Networking
             {
                 "PlayerJoined" => new PlayerJoined(args[1]),
                 "PlayerLeft" => new PlayerLeft(args[1]),
-                "Tilled" => new Tilled(args[1]),
                 "Planted" => new Planted(args[1]),
-                "Destroyed" => new Destroyed(args[1]),
                 "Pinged" => new Pinged(args[1]),
                 "Welcome" => new Welcome(args[1]),
                 _ => null

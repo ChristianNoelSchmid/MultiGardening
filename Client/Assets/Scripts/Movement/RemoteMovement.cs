@@ -29,7 +29,7 @@ public class RemoteMovement : MonoBehaviour
     }
     public void SetMovement(GridPosition position) 
     {
-        _position = new Vector2(position.X, position.Y);
+        _position = new Vector2(position.X, position.Y) * 3.0f;
         _isFlipped = false;
     }
 }

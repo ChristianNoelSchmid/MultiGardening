@@ -179,14 +179,12 @@ namespace Server.Networking
 
         private void AcceptAck(ulong ack)
         {
-            Debug.Log($"Recieved acknowledgement {ack} from the server. Removing");
             int index;
             lock(_listLock)
             {
                 index = _resolverBuffer.FindIndex(res => res.AckIndex == ack);
                 if(index != -1) _resolverBuffer.RemoveAt(index);
             }
-            Debug.Log($"Resolver buffer size: {_resolverBuffer.Count}");
         }
 
         /// <summary>

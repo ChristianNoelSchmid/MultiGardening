@@ -13,6 +13,7 @@ public class SelectedPlant : MonoBehaviour
     [SerializeField]
     private uint _selectedIndex = 0;
     public uint Selected => _selectedIndex;
+    public Plant Plant => _plantSelection[_selectedIndex];
 
     private void Start() => 
         OnPlantUpdated.Invoke(null, _plantSelection[_selectedIndex]);

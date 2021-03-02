@@ -1,3 +1,5 @@
+using System;
+
 namespace Server.Models
 {
     /// <summary>
@@ -10,10 +12,11 @@ namespace Server.Models
         public GridPosition Position { get; init; }
         public uint PlantType { get; init; }
 
-        // Represents the total seconds (since 1970) to the point
-        // when the plant is fully grown. 
-        public double FullGrownAtSeconds { get; init; }
+        // Represents the total seconds, since the server started,
+        // to the point when the plant is fully grown. 
+        public DateTime TimeToComplete { get; init; }
+
         public string Serialize() =>
-            $"{Position.Serialize()}#{PlantType}#{FullGrownAtSeconds}";
+            $"{Position.Serialize()}#{PlantType}#{TimeToComplete.ToString("yyyy-MM-dd HH:mm:ss")}";
     }
 }

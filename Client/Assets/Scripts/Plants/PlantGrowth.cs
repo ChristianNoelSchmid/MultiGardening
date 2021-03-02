@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using UnityEngine;
 
 public class PlantGrowth : MonoBehaviour
@@ -9,29 +11,26 @@ public class PlantGrowth : MonoBehaviour
     private Plant _plant;
     public Plant Plant => _plant;
 
-    private double _plantStartTime;
+    private DateTime _timeToCompletion;
     private SpriteRenderer _plantSprite;
     private Transform _plantTransform;
 
     private void Awake()
     {
-        DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc); 
-        TimeSpan diff = DateTime.UtcNow - origin;
-
-        _plantStartTime = diff.TotalSeconds;
         _plantTransform = transform.Find("Plant");
         _plantSprite = _plantTransform.GetComponent<SpriteRenderer>();
     }
 
     void Update()
     {
-        int stage = 0; 
-        DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        double currentSeconds = (DateTime.UtcNow - origin).TotalSeconds - _plantStartTime;
+        int stage = 0;
+        float timePast = _plant.Stages.Sum(stage => stage.timeIntervalSec) 
+            - (float)(_timeToCompletion - DateTime.UtcNow).TotalSeconds;
+        float intervalTime = 0.0f;
 
-        while(stage < _plant.Stages.Count && currentSeconds > _plant.Stages[stage].timeIntervalSec)
+        while(stage < _plant.Stages.Count && timePast > _plant.Stages[stage].timeIntervalSec)
         {
-            currentSeconds -= _plant.Stages[stage].timeIntervalSec;
+            timePast -= _plant.Stages[stage].timeIntervalSec;
             stage += 1;
         }
 
@@ -44,10 +43,13 @@ public class PlantGrowth : MonoBehaviour
         {
             _plantSprite.sprite = _plant.Stages[stage].sprite;
             float scale = Mathf.Lerp(
-                1.0f, _plant.Stages[stage].minSize,
-                (float)(_plant.Stages[stage].timeIntervalSec - currentSeconds) / (float)_plant.Stages[stage].timeIntervalSec
+                _plant.Stages[stage].minSize, 1.0f,
+                timePast / _plant.Stages[stage].timeIntervalSec 
             );
             _plantTransform.localScale = new Vector3(scale, scale, 1.0f);
         }
     }
+
+    public void SetPlantStartTime(DateTime time) =>
+        _timeToCompletion = time;
 }

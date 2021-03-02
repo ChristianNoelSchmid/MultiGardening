@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using Server.Models;
 
 namespace Server.Networking.NetworkEvents
@@ -22,7 +24,10 @@ namespace Server.Networking.NetworkEvents
                         Y = int.Parse(args[3])
                     },
                     PlantType = uint.Parse(args[4]),
-                    FullGrownAtSeconds = double.Parse(args[5])
+                    TimeToComplete = DateTime.ParseExact (
+                        args[5], "yyyy-MM-dd HH:mm:ss", 
+                        CultureInfo.InvariantCulture, DateTimeStyles.None
+                    )
                 }
             };
         }

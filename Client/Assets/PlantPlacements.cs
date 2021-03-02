@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,6 +30,7 @@ public class PlantPlacements : MonoBehaviour
     private void Update()
     {
         if(PlayerControls.PlantClicked)
+        {
             _eventHandler.TryPlantPlacement(
                 new PlantPlacement 
                 {
@@ -37,19 +39,23 @@ public class PlantPlacements : MonoBehaviour
                         X = PlayerControls.GridPosition.x, 
                         Y = PlayerControls.GridPosition.y
                     }, 
-                    PlantType = _selectedPlant.Selected
+                    PlantType = _selectedPlant.Selected,
+                    TimeToComplete = DateTime.UtcNow
                 }
             );
+        }
     }
 
     public void Place(PlantPlacement placement)
     {
         _placements.Add(placement.Position, placement);
 
-        Instantiate(
+        var newPlant = Instantiate(
             _plants[placement.PlantType], 
             new Vector2(placement.Position.X * 3, placement.Position.Y * 3),
             Quaternion.identity
-        );
+        ).GetComponent<PlantGrowth>();
+
+        newPlant.SetPlantStartTime(placement.TimeToComplete);
     }
 }

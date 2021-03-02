@@ -5,6 +5,10 @@ using UnityEngine;
 public class CritterMovement : MonoBehaviour
 {
     [SerializeField]
+    private int _index;
+    public int Index => _index;
+
+    [SerializeField]
     private float _speed;
 
     [SerializeField]
