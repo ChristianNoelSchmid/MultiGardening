@@ -1,12 +1,12 @@
 using System;
+using System.Net;
 
 namespace Server.Networking
 {
-    public record DatagramCallback
-    {
-        public string Data { get; init; }
-        public Action<string, bool> SendToCaller { get; init; }
-        public Action<string, bool> SendToOthers { get; init; }
-        public Action<string, bool> SendToAll { get; init; }
-    }
+    public record DatagramCallback (
+        string Data, IPEndPoint EndPoint,
+        Action<string, bool> SendToCaller,
+        Action<string, bool> SendToOthers,
+        Action<string, bool> SendToAll
+    );
 }

@@ -1,8 +1,5 @@
-namespace Server.Models
-{
-    public record IdModel : ISerializable
-    {
-        public uint Id { get; set; }
+namespace Server.Models {
+    public record IdModel(int Id) : ISerializable {
         public string Serialize() => Id.ToString();
     }
 }

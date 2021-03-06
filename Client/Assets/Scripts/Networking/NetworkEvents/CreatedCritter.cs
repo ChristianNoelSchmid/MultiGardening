@@ -15,8 +15,8 @@ namespace Server.Networking.NetworkEvents
             string [] args = data.Split('#');
             Placement = new CritterPlacement
             {
-                Index = uint.Parse(args[0]),
-                Type = uint.Parse(args[1]),
+                Id = int.Parse(args[0]),
+                Type = int.Parse(args[1]),
                 Position = new GridPosition
                 {
                     X = int.Parse(args[2]),

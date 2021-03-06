@@ -23,7 +23,7 @@ namespace Server.Networking.NetworkEvents
                         X = int.Parse(args[2]),
                         Y = int.Parse(args[3])
                     },
-                    PlantType = uint.Parse(args[4]),
+                    PlantType = int.Parse(args[4]),
                     TimeToComplete = DateTime.ParseExact (
                         args[5], "yyyy-MM-dd HH:mm:ss", 
                         CultureInfo.InvariantCulture, DateTimeStyles.None

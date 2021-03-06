@@ -24,6 +24,9 @@ namespace Server.Networking
         private PlantPlacements _plantPlacements;
 
         [SerializeField]
+        private CritterPlacements _critterPlacements;
+
+        [SerializeField]
         private Transform _playerTransform;
 
         private int _playerId;
@@ -51,10 +54,10 @@ namespace Server.Networking
             _datagramHandler.SendDatagram(
                 new PlayerJoined
                 {
-                    ActorMovement = new ActorMovement
+                    Position = new GridPosition
                     {
-                        Position = Tuple.Create(_playerTransform.position.x, _playerTransform.position.y),
-                        IsFlipped = false
+                        X = PlayerControls.GridPosition.x,
+                        Y = PlayerControls.GridPosition.y
                     }
                 }.CreateString(), true
             );
@@ -99,6 +102,7 @@ namespace Server.Networking
         /// <returns>The NetworkEvent, with parsed data</returns>
         private NetworkEvent ParseEvent(string text)
         {
+            Debug.Log(text);
             var args = text.Split(new string[] { "::" }, StringSplitOptions.None); 
             
             return args[0] switch
@@ -108,6 +112,8 @@ namespace Server.Networking
                 "Planted" => new Planted(args[1]),
                 "Pinged" => new Pinged(args[1]),
                 "Welcome" => new Welcome(args[1]),
+                "CreatedCritter" => new CreatedCritter(args[1]),
+                "MovedCritter" => new MovedCritter(args[1]),
                 _ => null
             };
         }
@@ -117,18 +123,32 @@ namespace Server.Networking
             {
                 case Welcome welcome: 
 
-                    _playerId = welcome.DataModel.CallerId;
-                    _secret = welcome.DataModel.Secret;
-                    StartCoroutine(BeginTransfer());                    break;
+                    _playerId = welcome.Snapshot.CallerId;
+                    _secret = welcome.Snapshot.Secret;
+                    _plantPlacements.ImportPlants(welcome.Snapshot.Value.PlantSnapshotData);
+                    _critterPlacements.ImportCritters(welcome.Snapshot.Value.CritterSnapshotData);
+                    StartCoroutine(BeginTransfer());                            break;
 
                 case Pinged pinged:
 
-                    if(pinged.CallerInfo.CallerId == _playerId)         return;
-                    _playerConnections.UpdateMarker(pinged);            break;
+                    if(pinged.CallerInfo.CallerId == _playerId)                 return;
+                    _playerConnections.UpdateMarker(pinged);                    break;
 
                 case Planted planted:
 
-                    _plantPlacements.Place(planted.Placement.Value);    break;
+                    _plantPlacements.Place(planted.Placement.Value);            break;
+
+                case CreatedCritter created:
+
+                    _critterPlacements.CreateCritter(created.Placement);        break;
+
+                case MovedCritter moved:
+
+                    _critterPlacements.MoveCritter(moved.Placement);            break;
+
+                case PlayerLeft left:
+
+                    _playerConnections.RemoveMarker(left.CallerInfo.CallerId);  break;
 
             }
         }

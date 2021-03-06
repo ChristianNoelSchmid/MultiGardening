@@ -5,19 +5,19 @@ namespace Server.Networking.NetworkEvents
 {
     public class PlayerJoined : NetworkEvent 
     { 
-        public ActorMovement ActorMovement { get; set; }
+        public GridPosition Position { get; set; }
 
-        public PlayerJoined() => ActorMovement = null;
+        public PlayerJoined() => Position = null;
         public PlayerJoined(string value)
         {
             string [] args = value.Split('#');
-            ActorMovement = new ActorMovement
+            Position = new GridPosition
             {
-                Position = Tuple.Create(float.Parse(args[0]), float.Parse(args[1])),
-                IsFlipped = bool.Parse(args[2])
+                X = int.Parse(args[0]), 
+                Y = int.Parse(args[1])
             };
         }
 
-        public string CreateString() => $"PlayerJoined::{ActorMovement.Serialize()}";
+        public string CreateString() => $"PlayerJoined::{Position.Serialize()}";
     }
 }

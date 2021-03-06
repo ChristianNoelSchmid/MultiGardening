@@ -1,9 +1,7 @@
 using Server.Models;
 
-namespace Server.Networking.NetworkEvents
-{
-    public record MovedCritter : NetworkEvent
-    {
+namespace Server.Networking.NetworkEvents {
+    public record MovedCritter : NetworkEvent {
         public CritterPlacement Placement { get; init; }
 
         public MovedCritter() => Placement = null;
@@ -11,18 +9,16 @@ namespace Server.Networking.NetworkEvents
         public MovedCritter(string data)
         {
             string [] args = data.Split("#");
-            Placement = new CritterPlacement
-            {
-                Index = uint.Parse(args[0]),
-                Type = uint.Parse(args[1]),
-                Position = new GridPosition
-                {
-                    X = int.Parse(args[2]),
-                    Y = int.Parse(args[3])
-                }
-            };
+            Placement = new CritterPlacement(
+                Id: int.Parse(args[0]),
+                Type: int.Parse(args[1]),
+                Position: new GridPosition(
+                    int.Parse(args[2]),
+                    int.Parse(args[3])
+                )
+            );
         }
 
-        public string CreateString() => $"MovedCritter{Placement.Serialize()}";
+        public string CreateString() => $"MovedCritter::{Placement.Serialize()}";
     }
 }

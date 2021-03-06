@@ -2058,6 +2058,7 @@ MonoBehaviour:
   _networkingEnabled: 1
   _playerConnections: {fileID: 1542306517}
   _plantPlacements: {fileID: 1338381015}
+  _critterPlacements: {fileID: 1320141788}
   _playerTransform: {fileID: 1623889165}
 --- !u!114 &587930052
 MonoBehaviour:
@@ -3710,7 +3711,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e756184300fbd40b9deaf3b8f0ffe72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _eventHandler: {fileID: 0}
+  _eventHandler: {fileID: 587930051}
 --- !u!1 &1338381013
 GameObject:
   m_ObjectHideFlags: 0

@@ -47,7 +47,7 @@ namespace Server.Networking
         /// it resends the message. Acknowledgements that do come remove the
         /// value from the Dictionary.
         /// </summary>
-        private ConcurrentDictionary<IPEndPoint, List<AckResolver>> _resolverBuffer;
+        private Dictionary<IPEndPoint, List<AckResolver>> _resolverBuffer;
         private readonly object _listLock = new object();
 
         /// <summary>
@@ -58,6 +58,7 @@ namespace Server.Networking
         /// in the network.
         /// </summary>
         private Dictionary<IPEndPoint, ulong> _ackExpectedIndices;
+        private object _expectedLock = new object();
 
         /// <summary>
         /// Represents the indices of the local client's current index count
@@ -66,7 +67,10 @@ namespace Server.Networking
         /// </summary>
         private Dictionary<IPEndPoint, ulong> _ackCurrentIndices;
 
+        private Dictionary<IPEndPoint, DateTime> _lastMessages;
+
         public EventHandler<DatagramCallback> MessageRecieved;
+        public EventHandler<DatagramCallback> LostConnection;
         public bool IsListening { get; set; } = true;
 
         /// <summary>
@@ -77,13 +81,14 @@ namespace Server.Networking
         /// <param name="port">The port which is being connected to</param>
         /// <param name="extHostname">The server's hostname
         /// Setting this value will result in a client handler</param>
-        public NetworkDatagramHandler(int port)
+        public NetworkDatagramHandler(in int port)
         {
             _client = new UdpClient(port);
 
-            _resolverBuffer = new ConcurrentDictionary<IPEndPoint, List<AckResolver>>();
+            _resolverBuffer = new Dictionary<IPEndPoint, List<AckResolver>>();
             _ackCurrentIndices = new Dictionary<IPEndPoint, ulong>();
             _ackExpectedIndices = new Dictionary<IPEndPoint, ulong>();
+            _lastMessages = new Dictionary<IPEndPoint, DateTime>();
 
             // Start the AckResolver
             new Thread(StartAckResolver){ IsBackground = true }.Start();
@@ -97,9 +102,8 @@ namespace Server.Networking
         /// <param name="isReliable">Whether the handler should ensure 
         /// the message reaches its intended recipient</param>
         /// <param name="endPoints">The client(s) to send the datagram to</param>
-        public void SendMessage(string message, bool isReliable, params IPEndPoint[] endPoints)
+        public void SendMessage(in string message, in bool isReliable, params IPEndPoint[] endPoints)
         {
-            Console.WriteLine($"Sending message: {message}");
             List<AckResolver> ackList;
             ulong ackIndex;
             byte[] msgBytes; 
@@ -108,10 +112,12 @@ namespace Server.Networking
             {
                 if(isReliable)
                 {
+                    // Since this code is read-only, it doesn't need to be locked
                     if(!_resolverBuffer.TryGetValue(endPoint, out ackList))
                         ackList = new List<AckResolver>();
 
-                    if(ackList.Count >= 100) return;
+                    if(ackList.Count >= 100) continue;
+
 
                     // Update the _ackLocalToRemoteCounts to reflect the new
                     // # of reliable messages sent to specific client (+ 1)
@@ -126,12 +132,12 @@ namespace Server.Networking
                     // resend the datagram if the timeout is reached
                     // before receiving an ACK
                     AddAckResolver(
-                        new () {
-                            AckIndex = ackIndex,
-                            IPEndPoint = endPoint,
-                            TicksStart = DateTime.Now.Ticks,
-                            Message = message
-                        }
+                        new (
+                            AckIndex: ackIndex,
+                            IPEndPoint: endPoint,
+                            TicksStart: DateTime.Now.Ticks,
+                            Message: message
+                        )
                     );
 
                     _ackCurrentIndices[endPoint] = ackIndex + 1;
@@ -149,7 +155,7 @@ namespace Server.Networking
         /// is already in the buffer, so there's no need to add it again.
         /// </summary>
         /// <param name="resolver">The AckResolver with the datagram info</param>
-        private void SendMessage(AckResolver resolver)
+        private void SendMessage(in AckResolver resolver)
         {
             byte[] msgBytes;
 
@@ -159,35 +165,41 @@ namespace Server.Networking
             _client.Send(msgBytes, msgBytes.Length, resolver.IPEndPoint);
         }
 
+        public void SendToAll(string data, bool isReliable) => 
+            SendMessage(data, isReliable, _ackExpectedIndices.Keys.ToArray());
+
         /// <summary>
         /// Adds a new AckResolver to the resolver buffer
         /// </summary>
         /// <param name="resolver">The new AckResolver to add</param>
-        private void AddAckResolver(AckResolver resolver)
+        private void AddAckResolver(in AckResolver resolver)
         {
             List<AckResolver> ackList;
 
-            // Retrieve the AckResolver List (if it exists) for
-            // the specified connection, and add the new AckResolver
-            // to the List
-            if(!_resolverBuffer.TryGetValue(resolver.IPEndPoint, out ackList))
-                ackList = new List<AckResolver>();
+            lock(_listLock)
+            {
+                // Retrieve the AckResolver List (if it exists) for
+                // the specified connection, and add the new AckResolver
+                // to the List
+                if(!_resolverBuffer.TryGetValue(resolver.IPEndPoint, out ackList))
+                    ackList = new List<AckResolver>();
 
-            lock(_listLock) { 
-                ackList.Add(resolver); 
-                ackList.Sort((ack1, ack2) => ack1.AckIndex.CompareTo(ack2.AckIndex));
+                lock(_listLock) { 
+                    ackList.Add(resolver); 
+                    ackList.Sort((ack1, ack2) => ack1.AckIndex.CompareTo(ack2.AckIndex));
+                }
+
+                _resolverBuffer[resolver.IPEndPoint] = ackList;
             }
-
-            _resolverBuffer.AddOrUpdate(resolver.IPEndPoint, ackList, (_, _) => ackList);
         }
 
-        private void AcceptAck(IPEndPoint endPoint, ulong ack)
+        private void AcceptAck(in IPEndPoint endPoint, ulong ack)
         {
             List<AckResolver> resolverList;
             int index;
-            if(_resolverBuffer.TryGetValue(endPoint, out resolverList))
+            lock(_listLock)
             {
-                lock(_listLock)
+                if(_resolverBuffer.TryGetValue(endPoint, out resolverList))
                 {
                     index = resolverList.FindIndex(res => res.AckIndex == ack);
                     if(index != -1) resolverList.RemoveAt(index);
@@ -200,14 +212,17 @@ namespace Server.Networking
         /// the ack resolver.
         /// </summary>
         /// <param name="endPoint">The end point to send the datagram to</param>
-        private void ResendRel(IPEndPoint endPoint)
+        private void ResendRel(in IPEndPoint endPoint)
         {
             List<AckResolver> list;
             AckResolver resolver;
-            if(_resolverBuffer.TryGetValue(endPoint, out list))
+            lock(_listLock)
             {
-                if((resolver = list.First()) != null)
-                    SendMessage(resolver);
+                if(_resolverBuffer.TryGetValue(endPoint, out list))
+                {
+                    if((resolver = list.First()) != null)
+                        SendMessage(resolver);
+                }
             }
         }
 
@@ -218,7 +233,7 @@ namespace Server.Networking
         /// </summary>
         /// <param name="datagram">The sequence of bytes representing the datagram message</param>
         /// <returns></returns>
-        private Datagram ParseDatagram(byte[] datagram)
+        private Datagram ParseDatagram(in byte[] datagram)
         {
             string msg = Encoding.ASCII.GetString(datagram);
             string suffix = msg.Split("::").Last();
@@ -254,61 +269,75 @@ namespace Server.Networking
                 if(!IsListening) continue;
 
                 bytes = _client.Receive(ref endPoint); 
+
+                lock(_listLock)
+                {
+                    _lastMessages[endPoint] = DateTime.UtcNow;
+                }
                 
                 if(!IsListening) continue;
 
                 datagram = ParseDatagram(bytes);
-                _ackExpectedIndices.TryGetValue(endPoint, out ackExpected);
 
-
-                switch(datagram)
+                lock(_expectedLock)
                 {
-                    // Datagram is reliable, but the ACK index is too high.
-                    // Ask client to resend awaiting data.
-                    case Reliable rel when rel.AckIndex > ackExpected:
-                        SendMessage(Resend.CreateString(), false, endPoint);            break;
+                    _ackExpectedIndices.TryGetValue(endPoint, out ackExpected);
 
-                    // Message is reliable, but the ACK index is too low.
-                    // Already recieved datagram: simply resend ACK and return
-                    case Reliable rel when rel.AckIndex < ackExpected:
-                        SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);   break;
 
-                    // Message is reliable, and was the expected index.
-                    // Accept message, send ACK, and invoke MessageRecieved event
-                    case Reliable rel:
-                        _ackExpectedIndices[endPoint] = ackExpected + 1;
-                        SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);
-                        MessageRecieved.Invoke(null, new DatagramCallback
-                        {
-                            Data = rel.Data,
-                            SendToCaller = (data, isRel) => SendMessage(data, isRel, endPoint),
-                            SendToOthers = (data, isRel) => SendMessage(
-                                    data, isRel, _ackExpectedIndices
-                                        .Keys.Where(k => k != endPoint).ToArray()
-                                    ),
-                            SendToAll    = (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices.Keys.ToArray())
-                        });                                                             break;
+                    switch(datagram)
+                    {
+                        // Datagram is reliable, but the ACK index is too high.
+                        // Ask client to resend awaiting data.
+                        case Reliable rel when rel.AckIndex > ackExpected:
+                            SendMessage(Resend.CreateString(), false, endPoint);            break;
 
-                    // Message contains request to resend packages
-                    // Resend earliest package
-                    case Resend: ResendRel(endPoint);                                   break;
+                        // Message is reliable, but the ACK index is too low.
+                        // Already recieved datagram: simply resend ACK and return
+                        case Reliable rel when rel.AckIndex < ackExpected:
+                            SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);   break;
 
-                    // Message is an acknowledgement datagram
-                    // Accept and remove awaiting AckResolver
-                    case Ack ack: AcceptAck(endPoint, ack.AckIndex);                    break;
+                        // Message is reliable, and was the expected index.
+                        // Accept message, send ACK, and invoke MessageRecieved event
+                        case Reliable rel:
+                            _ackExpectedIndices[endPoint] = ackExpected + 1;
+                            SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);
+                            MessageRecieved.Invoke(null, new DatagramCallback (
+                                Data: rel.Data,
+                                EndPoint: endPoint,
 
-                    // Message is unreliable - invoke MessageRecieved event
-                    case Unreliable unrel: 
-                        MessageRecieved.Invoke(null, new DatagramCallback
-                        {
-                            Data = unrel.Data,
-                            SendToCaller = (data, isRel) => SendMessage(data, isRel, endPoint),
-                            SendToOthers = (data, isRel) => SendMessage(
-                                    data, isRel, _ackExpectedIndices
-                                        .Keys.Where(k => k != endPoint).ToArray()
-                                    ),
-                            SendToAll    = (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices.Keys.ToArray())
-                        });                                                             break; 
+                                SendToCaller: (data, isRel) => SendMessage(data, isRel, endPoint),
+                                SendToOthers: (data, isRel) => SendMessage(
+                                        data, isRel, _ackExpectedIndices
+                                            .Keys.Where(k => k != endPoint).ToArray()
+                                        ),
+                                SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
+                                            .Keys.ToArray()
+                            )));                                                            break;
+
+                        // Message contains request to resend packages
+                        // Resend earliest package
+                        case Resend: ResendRel(endPoint);                                   break;
+
+                        // Message is an acknowledgement datagram
+                        // Accept and remove awaiting AckResolver
+                        case Ack ack: AcceptAck(endPoint, ack.AckIndex);                    break;
+
+                        // Message is unreliable - invoke MessageRecieved event
+                        case Unreliable unrel: 
+                            MessageRecieved.Invoke(
+                                null, new DatagramCallback (
+                                    Data: unrel.Data,
+                                    EndPoint: endPoint,
+
+                                    SendToCaller: (data, isRel) => SendMessage(data, isRel, endPoint),
+                                    SendToOthers: (data, isRel) => SendMessage(
+                                            data, isRel, _ackExpectedIndices
+                                                .Keys.Where(k => k != endPoint).ToArray()
+                                            ),
+                                    SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
+                                                .Keys.ToArray()
+                            )));                                                             break; 
+                    }
                 }
             }
         }
@@ -325,14 +354,41 @@ namespace Server.Networking
             while(true)
             {
                 Thread.Sleep(100);
-
-                foreach(var list in _resolverBuffer.Values)
+                
+                lock(_listLock)
                 {
-                    resolver = list.FirstOrDefault();
-                    if(DateTime.Now.Ticks - resolver?.TicksStart > timeout)
+                    int count = 0;
+                    foreach(var list in _resolverBuffer.Values)
                     {
-                        foreach(var res in list)
-                            SendMessage(res);
+                        count += list.Count;
+                        resolver = list.FirstOrDefault();
+                        if(DateTime.Now.Ticks - resolver?.TicksStart > timeout)
+                        {
+                            foreach(var res in list)
+                                SendMessage(res);
+                        }
+                    }
+                    Console.WriteLine($"Average resolver size: { (_resolverBuffer.Count == 0 ? 0 : count / _resolverBuffer.Count) }");
+
+                    foreach(var pair in _lastMessages)
+                    {
+                        if(DateTime.UtcNow - pair.Value > TimeSpan.FromSeconds(7.5f) && _resolverBuffer.ContainsKey(pair.Key))
+                        {
+                            LostConnection.Invoke(null, new DatagramCallback (
+                            Data: string.Empty,
+                            EndPoint: pair.Key,
+
+                            SendToCaller: (data, isRel) => SendMessage(data, isRel, pair.Key),
+                            SendToOthers: (data, isRel) => SendMessage(
+                                    data, isRel, _ackExpectedIndices
+                                        .Keys.Where(k => k != pair.Key).ToArray()
+                                    ),
+                            SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
+                                        .Keys.ToArray()
+                            )));
+                            lock(_listLock) { _resolverBuffer.Remove(pair.Key); _lastMessages.Remove(pair.Key); }
+                            lock(_expectedLock) { _ackExpectedIndices.Remove(pair.Key); }
+                        }
                     }
                 }
             }

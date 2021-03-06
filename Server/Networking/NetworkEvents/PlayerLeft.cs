@@ -11,11 +11,10 @@ namespace Server.Networking.NetworkEvents
         public PlayerLeft(string value) 
         {
             string [] args = value.Split('#');
-            CallerInfo = new DataModel
-            {
-                CallerId = int.Parse(args[0]),
-                Secret = args[1]
-            };
+            CallerInfo = new DataModel (
+                CallerId: int.Parse(args[0]),
+                Secret: args[1]
+            );
         }
 
         public string CreateString() => $"PlayerLeft::{CallerInfo.Serialize()}";

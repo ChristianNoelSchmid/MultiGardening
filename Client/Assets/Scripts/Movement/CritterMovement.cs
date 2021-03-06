@@ -23,17 +23,13 @@ public class CritterMovement : MonoBehaviour
     private Animator _animator;
     private bool _reachedTarget = false;
 
+    private int perlinSeed;
+
     void Awake()
     {
         _transform = transform;
         _animator = GetComponent<Animator>();
-    }
-
-    void Start()
-    {
-        SetTarget(
-            GameObject.Find("Square").transform.position
-        );
+        perlinSeed = Random.Range(0, 2000);
     }
 
     void Update()
@@ -44,17 +40,24 @@ public class CritterMovement : MonoBehaviour
                 _reachedTarget = true;
 
             else
+            {
+                if(_transform.position.x < _target.x)
+                    _transform.localScale = Vector3.one;
+                else
+                    _transform.localScale = new Vector3(-1, 1, 1);
+
                 _transform.position = Vector2.Lerp(
                     _transform.position, 
                     _transform.position + Vector3.ClampMagnitude((_target - (Vector2)_transform.position), 1.0f),
                     _speed * Time.deltaTime
                 );
+            }
         } 
         else
         {
             var perlinNoise = new Vector2 (
-                (2.0f * Mathf.PerlinNoise(Time.time, Time.time)) - 1.0f,
-                (2.0f * Mathf.PerlinNoise(1000f + Time.time, 1000f + Time.time)) - 1.0f
+                (2.0f * Mathf.PerlinNoise(Time.time + perlinSeed, Time.time + perlinSeed)) - 1.0f,
+                (2.0f * Mathf.PerlinNoise(1000f + Time.time + perlinSeed, 1000f + Time.time + perlinSeed)) - 1.0f
             ) * _bumbleLevel;
 
             _transform.position = Vector2.Lerp(
@@ -74,5 +77,6 @@ public class CritterMovement : MonoBehaviour
             Random.Range(-_margin, _margin),
             Random.Range(-_margin, _margin)
         );
+        _reachedTarget = false;
     }
 }

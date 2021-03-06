@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Server.Networking;
+using Server.State;
 
 namespace Server
 {
@@ -13,13 +9,11 @@ namespace Server
         static void Main(string[] args)
         {
             var datagramHandler = new NetworkDatagramHandler(3000);
-            var eventHandler = new NetworkEventHandler();
+            var state = new ServerState(datagramHandler);
+            var eventHandler = new NetworkEventHandler(datagramHandler, state);
 
             datagramHandler.MessageRecieved += (_, callback) =>
-            {
-                Console.WriteLine($"Recieved datagram: {callback.Data}");
                 eventHandler.TransferEvent(callback);
-            };
 
             while (true) ;
         }

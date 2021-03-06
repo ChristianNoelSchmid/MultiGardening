@@ -58,4 +58,10 @@ public class PlantPlacements : MonoBehaviour
 
         newPlant.SetPlantStartTime(placement.TimeToComplete);
     }
+
+    public void ImportPlants(IEnumerable<PlantPlacement> placements)
+    {
+        foreach(var placement in placements)
+            Place(placement);
+    }
 }

@@ -233,7 +233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _index: 1
-  _speed: 7
+  _speed: 5
   _bumbleLevel: 0
   _margin: 0
 --- !u!1 &8564079941033807876

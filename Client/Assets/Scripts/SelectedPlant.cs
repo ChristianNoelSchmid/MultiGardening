@@ -11,8 +11,8 @@ public class SelectedPlant : MonoBehaviour
     private Plant [] _plantSelection;
 
     [SerializeField]
-    private uint _selectedIndex = 0;
-    public uint Selected => _selectedIndex;
+    private int _selectedIndex = 0;
+    public int Selected => _selectedIndex;
     public Plant Plant => _plantSelection[_selectedIndex];
 
     private void Start() => 

@@ -1,25 +1,37 @@
-using System.Diagnostics;
 using Server.Models;
 using Server.Networking.NetworkEvents;
+using Server.State;
 using System.Collections.Immutable;
-using System;
+using System.Net;
 
 namespace Server.Networking
 {
     public class NetworkEventHandler
     {
-        private readonly float[] _plantSecondsToAdd = new float [] {
-            10, 10, 15
-        };
-        private ImmutableHashSet<int> _clientIds;
-        private State _state;
+        private ImmutableDictionary<IPEndPoint, int> _clientIds;
+        private ServerState _state;
 
         private int _clientId = 1;
 
-        public NetworkEventHandler() 
-        {
-            _clientIds = ImmutableHashSet<int>.Empty;
-            _state = new State();
+        public NetworkEventHandler(
+            in NetworkDatagramHandler datagramHandler,
+            in ServerState state
+        ) {
+            _clientIds = ImmutableDictionary<IPEndPoint, int>.Empty;
+            _state = state;
+
+            datagramHandler.LostConnection += (_, callback) => {
+                callback.SendToAll(
+                    new PlayerLeft
+                    {
+                        CallerInfo = new DataModel(
+                            Secret: "Secret",
+                            _clientIds[callback.EndPoint]
+                        )
+                    }.CreateString(), true
+                );
+                _clientIds = _clientIds.Remove(callback.EndPoint);
+            };
         }
 
         /// <summary>
@@ -39,44 +51,46 @@ namespace Server.Networking
                 "PlayerLeft" => new PlayerLeft(args[1]),
                 "Planted" => new Planted(args[1]),
                 "Pinged" => new Pinged(args[1]),
-                "CreatedCritter" => new CreatedCritter(args[1]),
-                "MovedCritter" => new MovedCritter(args[1]),
                 _ => null
             };
         }
-        public void TransferEvent(DatagramCallback callback)
+        public void TransferEvent(in DatagramCallback callback)
         {
             switch (ParseEvent(callback.Data))
             {
                 case PlayerJoined joined:
-                    _clientIds = _clientIds.Add(_clientId);
+
+                    _clientIds = _clientIds.Add(callback.EndPoint, _clientId);
 
                     callback.SendToCaller(
                         new Welcome
                         {
-                            DataModel = new DataModel
-                            {
-                                CallerId = _clientId,
-                                Secret = "Secret"
-                            }
+                            Snapshot = new DataModel<StateSnapshot>
+                            (
+                                CallerId: _clientId,
+                                Secret: "Secret",
+                                Value: _state.GetSnapshot()
+                            )
                         }.CreateString(), true
                     );
 
                     ++_clientId;                                    break;
 
                 case Pinged pinged: 
+
                     callback.SendToOthers(callback.Data, false);    break;
 
                 case Planted planted: 
-                    if(_state.TryAddPlant(planted.Placement.Value))
+
+                    var plantOption = _state.TryAddPlant(planted.Placement.Value);
+                    if(plantOption.IsSome(out var plant))
                     {
                         callback.SendToAll((
                             planted with {
                                 Placement = planted.Placement with {
-                                    Value = planted.Placement.Value with {
-                                        TimeToComplete = DateTime.UtcNow.AddSeconds
-                                            (_plantSecondsToAdd[planted.Placement.Value.PlantType])
-                            } } }
+                                    Value = plant
+                                } 
+                            }
                         ).CreateString(), true);    
                     }                                               break;
 

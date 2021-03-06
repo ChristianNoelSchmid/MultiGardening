@@ -1,10 +1,5 @@
-namespace Server.Models
-{
-    public record GridPosition : ISerializable
-    {
-        public int X { get; init; }
-        public int Y { get; init; }
-
+namespace Server.Models {
+    public record GridPosition(int X, int Y) : ISerializable {
         public string Serialize() =>
             string.Join('#', X, Y);
     }
