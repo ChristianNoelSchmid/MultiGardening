@@ -2,8 +2,16 @@ using System;
 using System.Globalization;
 using Server.Models;
 
-namespace Server.Networking.NetworkEvents {
-    public record Planted : NetworkEvent {
+namespace Server.Networking.NetworkEvents 
+{
+    /// <summary>
+    /// NetworkEvent representing that the Client wishes to
+    /// plant something in the specified GridPosition.
+    /// </summary>
+    public record Planted : NetworkEvent 
+    {
+        // The Client info, with plant placement info, such as
+        // GridPosition and type of plant
         public DataModel<PlantPlacement> Placement { get; init; }
         public Planted() => Placement = null;
         public Planted(string value) {

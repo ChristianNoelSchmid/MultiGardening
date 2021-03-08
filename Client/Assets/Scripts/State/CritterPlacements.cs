@@ -25,7 +25,11 @@ public class CritterPlacements : MonoBehaviour
 
     public CritterMovement CreateCritter(CritterPlacement created)
     {
-        var newMovement = Instantiate(_critters[created.Type], Vector3.zero, Quaternion.identity)
+        float x = Mathf.Sign(Random.Range(-10, 10));
+        float y = Mathf.Sign(Random.Range(-10, 10));
+        var spawnPos = new Vector2(22.5f, 11.5f) + (new Vector2(25.5f, 14.5f) * new Vector2(x, y));
+
+        var newMovement = Instantiate(_critters[created.Type], spawnPos, Quaternion.identity)
             .GetComponent<CritterMovement>(); 
         newMovement.SetTarget(new Vector2(created.Position.X, created.Position.Y) * 3.0f);
 

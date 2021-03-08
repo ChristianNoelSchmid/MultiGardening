@@ -8,14 +8,14 @@ namespace Server
     {
         static void Main(string[] args)
         {
+            // Create the NetworkDatagramHandler, NetworkEventHandler,
+            // and ServerState
             var datagramHandler = new NetworkDatagramHandler(3000);
             var state = new ServerState(datagramHandler);
             var eventHandler = new NetworkEventHandler(datagramHandler, state);
 
-            datagramHandler.MessageRecieved += (_, callback) =>
-                eventHandler.TransferEvent(callback);
-
-            while (true) ;
+            // Loop until Ctrl-C
+            while (true);
         }
     }
 }

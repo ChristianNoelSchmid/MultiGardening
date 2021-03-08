@@ -4,6 +4,10 @@ using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {
+    /// <summary>
+    /// NetworkEvent representing a new critter that has
+    /// been created by the Server, to be sent to the client
+    /// </summary>
     public class CreatedCritter : NetworkEvent
     {
         public CritterPlacement Placement { get; set; }

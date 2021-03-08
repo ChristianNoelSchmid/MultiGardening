@@ -20,11 +20,14 @@ public class SelectedPlant : MonoBehaviour
 
     private void SelectUp()
     {
-        _selectedIndex += 1;
-        if(_selectedIndex >= _plantSelection.Length)
-            _selectedIndex = 0;
+        if(PlayerControls.IsEnabled)
+        {
+            _selectedIndex += 1;
+            if(_selectedIndex >= _plantSelection.Length)
+                _selectedIndex = 0;
 
-        OnPlantUpdated.Invoke(null, _plantSelection[_selectedIndex]);
+            OnPlantUpdated.Invoke(null, _plantSelection[_selectedIndex]);
+        }
     }
 
     void Update()

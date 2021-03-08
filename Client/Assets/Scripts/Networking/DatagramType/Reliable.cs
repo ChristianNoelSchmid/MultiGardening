@@ -2,6 +2,10 @@ using System.Linq;
 
 namespace Server.Networking.Datagrams
 {
+    /// <summary>
+    /// Represents a reliable datagram transmission, with an
+    /// acknowledgement index, and the associated data.
+    /// </summary>
     public class Reliable : Datagram
     {
         public ulong AckIndex { get; set; }

@@ -11,10 +11,19 @@ public class MarkerPosition : MonoBehaviour
     private void Awake() =>         
         _transform = transform;
 
-    private void Update() =>
-        _transform.position = Vector2.Lerp(
-            _transform.position,
-            PlayerControls.GridPosition * 3,
-            Time.deltaTime * _speed 
-        );
+    private void Update()
+    {
+        if(PlayerControls.IsEnabled)
+        {
+            _transform.position = Vector2.Lerp(
+                _transform.position,
+                PlayerControls.GridPosition * 3,
+                Time.deltaTime * _speed 
+            );
+        }
+        else
+        {
+            _transform.position = new Vector2(-8, -8);
+        }
+    }
 }

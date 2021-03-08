@@ -4,6 +4,10 @@ using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {
+    /// <summary>
+    /// NetworkEvent representing that the Client wishes to
+    /// plant something in the specified GridPosition.
+    /// </summary>
     public class Planted : NetworkEvent 
     {
         public DataModel<PlantPlacement> Placement { get; set; }

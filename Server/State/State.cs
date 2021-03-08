@@ -18,24 +18,9 @@ namespace Server.State
         // The PlantInfo for each plant that can be positioned by the client
         private readonly PlantInfo [] _plantInfo = new PlantInfo [] 
         {
-            // Barell Cactus
-            new PlantInfo ()
-            {
-                PlantType = 0,
-                SecondsToGrow = 10.0f,
-            },
-            // Aloe Vera
-            new PlantInfo ()
-            {
-                PlantType = 1,
-                SecondsToGrow = 10.0f,
-            },
-            // Pumpkin
-            new PlantInfo ()
-            {
-                PlantType = 2,
-                SecondsToGrow = 15.0f,
-            },
+            new (PlantType: 0, SecondsToGrow: 10.0f), // Barell Cactus
+            new (PlantType: 1, SecondsToGrow: 10.0f), // Aloe Vera
+            new (PlantType: 2, SecondsToGrow: 15.0f)  // Pumpkin
         };
 
         // The critter info for each critter that can be positioned
@@ -43,25 +28,23 @@ namespace Server.State
         private readonly CritterInfo [] _critterInfo = new CritterInfo []
         {
             // Bumblebee
-            new CritterInfo ()
-            {
-                CritterType = 0,
-                SecondsToUpdate = 10,
-                PlantTypeAttractions = ImmutableList.Create<int>(0, 2)
-            },
+            new (CritterType: 0, SecondsToUpdate: 10, 
+                 PlantTypeAttractions: ImmutableList.Create<int>(0, 2)),
+
             // Ladybug
-            new CritterInfo ()
-            {
-                CritterType = 1,
-                SecondsToUpdate = 30,
-                PlantTypeAttractions = ImmutableList.Create<int>(1, 2)
-            }
+            new (CritterType: 1, SecondsToUpdate: 30,
+                 PlantTypeAttractions: ImmutableList.Create<int>(1, 2))
         };
 
         // The world bounds
         private readonly Range rangeX = 0..14;
         private readonly Range rangeY = 0..5;
 
+        /// <summary>
+        /// Retrieves a StateSnapshot of the Server's current State
+        /// (plants and critters)
+        /// </summary>
+        /// <returns>The Server's StateSnapshot</returns>
         public StateSnapshot GetSnapshot() => new StateSnapshot(
             PlantSnapshotData: _plantData.Select(
                 _ => new PlantPlacement(_.Key, _.Value.Type, _.Value.FullyGrownTime)
@@ -120,8 +103,6 @@ namespace Server.State
                placement.Position.Y < rangeY.Start.Value && placement.Position.Y > rangeY.End.Value)
                 return Option<PlantPlacement>.None;
 
-            // Lock the _plantData Dictionary, for parallel
-            // processing
             lock(_stateLock)
             {
                 // Check that there isn't a plant which is already planted at
@@ -131,11 +112,8 @@ namespace Server.State
 
                 _plantData = _plantData.Add(
                     placement.Position, 
-                    new () 
-                    { 
-                        Type = placement.PlantType,
-                        FullyGrownTime = DateTime.UtcNow.AddSeconds(_plantInfo[placement.PlantType].SecondsToGrow)
-                    }
+                    new (placement.PlantType,
+                         DateTime.UtcNow.AddSeconds(_plantInfo[placement.PlantType].SecondsToGrow))
                 );
 
                 _plantTypeCounts = _plantTypeCounts.SetItem(
@@ -173,7 +151,7 @@ namespace Server.State
 
                     for(int i = 0; i < _critterTypeCounts.Count; ++i) 
                     {
-                        while(_critterTypeCounts[i] < desiredCritterCount[i] / 3)
+                        while(_critterTypeCounts[i] < desiredCritterCount[i] / 5)
                         {
                             var newPlacement = SpawnCritter(i);
                             _datagramHandler.SendToAll(

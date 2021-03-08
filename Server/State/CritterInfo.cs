@@ -2,10 +2,17 @@ using System.Collections.Immutable;
 
 namespace Server.State
 {
-    public record CritterInfo
-    {
-        public uint CritterType { get; init; }
-        public ImmutableList<int> PlantTypeAttractions { get; init; }
-        public float SecondsToUpdate { get; init; }
-    }
+    /// <summary>
+    /// Represents static data referencing various helpful
+    /// information pertaining to Critters for the Server to use.
+    /// </summary>
+    /// <param name="CritterType">The type of Critter</param>
+    /// <param name="PlantTypeAttractions">What type of plants the Critter likes</param>
+    /// <param name="SecondsToUpdate">The amount of seconds it should take from the Critter to move</param>
+    /// <returns></returns>
+    public record CritterInfo (
+        uint CritterType, 
+        ImmutableList<int> PlantTypeAttractions, 
+        float SecondsToUpdate
+    );
 }

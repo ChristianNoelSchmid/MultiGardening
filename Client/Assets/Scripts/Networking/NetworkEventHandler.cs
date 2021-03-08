@@ -47,10 +47,9 @@ namespace Server.Networking
             _callbackQueue = new Queue<DatagramCallback>();
         }
 
-        private void Start()
+        public void StartHandler()
         {
-            if(!_networkingEnabled) return;            
-
+            if(!_networkingEnabled) return;             
             _datagramHandler.SendDatagram(
                 new PlayerJoined
                 {

@@ -27,10 +27,10 @@ namespace Server.Networking
     public class NetworkDatagramHandler : MonoBehaviour
     {
         [SerializeField]
-        private string _externalHost;
+        private int _port;
 
         [SerializeField]
-        private int _port;
+        private NetworkEventHandler _eventHandler;
 
         /// <summary>
         /// Length of ticks for a packet timeout
@@ -47,7 +47,7 @@ namespace Server.Networking
         private UdpClient _client;
 
         /// <summary>
-        /// List which contains all information about needed acknoledgements.
+        /// List which contains all information about needed acknowledgements.
         /// Ensures specific messages are sent. When an ensured message is sent,
         /// it's ID (ulong) is stored in this List, as well as the time at
         /// which it was sent. Periodically, this List is checked and, upon
@@ -59,10 +59,9 @@ namespace Server.Networking
         private readonly object _listLock = new object();
 
         /// <summary>
-        /// A dictionary which holds a collection of client IPEndPoints,
-        /// and an index representing the total number of ensured datagrams 
-        /// sent. This is updated on both the client side and distant client side,
-        /// To ensure that datagrams which need acknowledgements are not lost 
+        /// An index representing the total number of ensured datagrams 
+        /// sent. This is updated on both the client side and server side,
+        /// to ensure that datagrams which need acknowledgements are not lost 
         /// in the network.
         /// </summary>
         private ulong _ackExpectedIndex;
@@ -87,24 +86,42 @@ namespace Server.Networking
         /// Setting this value will result in a client handler</param>
         private void Awake()
         {
-            _client = new UdpClient(_externalHost, _port);
-
             _resolverBuffer = new List<AckResolver>();
             _ackExpectedIndex = 0;
             _ackCurrentIndex = 0;
+        }
 
-            // Start the AckResolver
+        public bool StartHandler(string ip)
+        {
+            try
+            {
+                _client = new UdpClient(ip, _port);
+            }
+            catch (Exception ex) when (
+                ex is SocketException || 
+                ex is FormatException
+            ) {
+                Debug.LogError(ex.Message);
+                return false;        
+            }
+
+            // Start the AckResolver, and Listening Thread
             _resolverThread = new Thread(StartAckResolver){ IsBackground = true };
             _listeningThread = new Thread(StartReceiving) { IsBackground = true };
 
+
             _resolverThread.Start();
             _listeningThread.Start();
+
+            _eventHandler.StartHandler();
+
+            return true;
         }
 
         private void OnApplicationQuit()
         {
-            _resolverThread.Abort();
-            _listeningThread.Abort();
+            _resolverThread?.Abort();
+            _listeningThread?.Abort();
         }
 
         /// <summary>

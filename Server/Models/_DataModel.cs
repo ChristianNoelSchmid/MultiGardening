@@ -2,7 +2,7 @@ using System;
 
 namespace Server.Models
 {
-    /* Serves as a wrapper for JSON objects being sent to and from server.  */
+    /* Serves as a wrapper for serialized objects being sent to and from server.  */
     public record DataModel (string Secret, int CallerId) : ISerializable {
         public string Serialize() =>
             string.Join('#', CallerId, Secret);

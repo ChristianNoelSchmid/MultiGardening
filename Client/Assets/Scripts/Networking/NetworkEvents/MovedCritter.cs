@@ -4,6 +4,11 @@ using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {
+    /// <summary>
+    /// NetworkEvent representing that the Server
+    /// has moved a critter from one GridPosition to another,
+    /// and that the Client needs to update with that info.
+    /// </summary>
     public class MovedCritter : NetworkEvent
     {
         public CritterPlacement Placement { get; set; }

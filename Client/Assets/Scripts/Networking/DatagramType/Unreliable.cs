@@ -1,5 +1,9 @@
 namespace Server.Networking.Datagrams
 {
+    /// <summary>
+    /// Sends a simple datagram, which will not
+    /// be resent if droppped.
+    /// </summary>
     public class Unreliable : Datagram
     {
         public string Data { get; set; }

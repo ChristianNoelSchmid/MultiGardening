@@ -4,6 +4,10 @@ using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {
+    /// <summary>
+    /// NetworkEvent representing a new Client that
+    /// has joined the game.
+    /// </summary>
     public record PlayerJoined : NetworkEvent 
     { 
         public GridPosition Position { get; init; }

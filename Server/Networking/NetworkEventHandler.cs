@@ -6,12 +6,24 @@ using System.Net;
 
 namespace Server.Networking
 {
+    /// <summary>
+    /// Parses and processes events sent by clients through the
+    /// NetworkDatagramHandler.
+    /// </summary>
     public class NetworkEventHandler
     {
+        /// <summary>
+        /// The client's connected - their IPEndPoints and integer Ids
+        /// </summary>
         private ImmutableDictionary<IPEndPoint, int> _clientIds;
+
+        /// <summary>
+        /// The ServerState at which certain parsed events are forwarded
+        /// </summary>
         private ServerState _state;
 
-        private int _clientId = 1;
+        // The current client id index (increments with each additional client)
+        private int _clientIdIndex = 1;
 
         public NetworkEventHandler(
             in NetworkDatagramHandler datagramHandler,
@@ -20,6 +32,9 @@ namespace Server.Networking
             _clientIds = ImmutableDictionary<IPEndPoint, int>.Empty;
             _state = state;
 
+            // Ensure that when the NetworkDatagramHandler loses a client connection,
+            // the client is also removed from the NetworkEventHandler, and
+            // the relevant information is sent to each connected client.
             datagramHandler.LostConnection += (_, callback) => {
                 callback.SendToAll(
                     new PlayerLeft
@@ -32,6 +47,10 @@ namespace Server.Networking
                 );
                 _clientIds = _clientIds.Remove(callback.EndPoint);
             };
+
+            // Connect the NetworkDatagramHandler's output with the NetworkEventHandler's input,
+            // allowing the NetworkEventHandler to respond to client datagrams
+            datagramHandler.MessageRecieved += (_, callback) => HandleEvent(callback);
         }
 
         /// <summary>
@@ -41,7 +60,7 @@ namespace Server.Networking
         /// <param name="text">The string to parse</param>
         /// <returns></returns>
         
-        private NetworkEvent ParseEvent(string text)
+        private NetworkEvent ParseEvent(in string text)
         {
             var args = text.Split("::"); 
             
@@ -54,35 +73,48 @@ namespace Server.Networking
                 _ => null
             };
         }
-        public void TransferEvent(in DatagramCallback callback)
+
+        /// <summary>
+        /// Takes in a callback instance, performing the relevant task given.
+        /// </summary>
+        /// <param name="callback">The callback which communicates with the NetworkDatagramHandler</param>
+        private void HandleEvent(in DatagramCallback callback)
         {
             switch (ParseEvent(callback.Data))
             {
                 case PlayerJoined joined:
 
-                    _clientIds = _clientIds.Add(callback.EndPoint, _clientId);
+                    // Add the new player to the list of client ids
+                    _clientIds = _clientIds.Add(callback.EndPoint, _clientIdIndex);
 
+                    // Send a Welcome datagram to the new client, with the server's
+                    // current state
                     callback.SendToCaller(
                         new Welcome
                         {
                             Snapshot = new DataModel<StateSnapshot>
                             (
-                                CallerId: _clientId,
+                                CallerId: _clientIdIndex,
                                 Secret: "Secret",
                                 Value: _state.GetSnapshot()
                             )
                         }.CreateString(), true
                     );
 
-                    ++_clientId;                                    break;
+                    // Increment the client Id index
+                    ++_clientIdIndex;                                   break;
 
                 case Pinged pinged: 
 
-                    callback.SendToOthers(callback.Data, false);    break;
+                    // Pinged messages can simply be forwarded to the other clients
+                    callback.SendToOthers(callback.Data, false);        break;
 
                 case Planted planted: 
 
+                    // Attempt to add the new plant
                     var plantOption = _state.TryAddPlant(planted.Placement.Value);
+
+                    // If successful, send the update to all clients
                     if(plantOption.IsSome(out var plant))
                     {
                         callback.SendToAll((
@@ -92,7 +124,7 @@ namespace Server.Networking
                                 } 
                             }
                         ).CreateString(), true);    
-                    }                                               break;
+                    }                                                   break;
 
                 default: return;
             };

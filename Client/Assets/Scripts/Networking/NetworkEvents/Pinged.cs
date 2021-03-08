@@ -3,6 +3,10 @@ using Server.Models;
 
 namespace Server.Networking.NetworkEvents
 {
+    /// <summary>
+    /// NetworkEvent representing a Client which has
+    /// pinged the Server with GridPosition data
+    /// </summary>
     public class Pinged : NetworkEvent
     {
         public DataModel<GridPosition> CallerInfo { get; set; }

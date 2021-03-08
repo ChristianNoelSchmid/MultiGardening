@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class PlayerControls : MonoBehaviour
 {
+    public static bool IsEnabled { get; set; } = false;
+
     [SerializeField]
     private CameraMovement _cameraMovement;
     private static Camera _mainCamera;
@@ -14,11 +16,14 @@ public class PlayerControls : MonoBehaviour
 
     private void FixedUpdate()
     {
-        _cameraMovement.IncrementZoom(-Input.mouseScrollDelta.y / 3.0f);
-        _cameraMovement.MoveAxes(new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")) * 0.5f);
+        if(IsEnabled)
+        {
+            _cameraMovement.IncrementZoom(-Input.mouseScrollDelta.y / 3.0f);
+            _cameraMovement.MoveAxes(new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")) * 0.5f);
+        }
     }
 
-    private void Update() => PlantClicked = Input.GetMouseButtonDown(0);
+    private void Update() => PlantClicked = IsEnabled ? Input.GetMouseButtonDown(0) : false;
 
     public static Vector2Int GridPosition
     {

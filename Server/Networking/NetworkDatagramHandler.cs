@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -7,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Server.Networking.Datagrams;
+using Server.Networking.Resolvers;
 
 namespace Server.Networking
 {
@@ -26,11 +26,7 @@ namespace Server.Networking
     /// 
     public class NetworkDatagramHandler
     {
-        /// <summary>
-        /// Length of ticks for a packet timeout
-        /// </summary>
-        /// <returns>Length of a network timeout - 1 second</returns>
-        private readonly double timeout = Math.Pow(10.0, 7.0);
+        private readonly AckResolver _ackResolver;
 
         /// <summary>
         /// The client for the UDP network. Handles sending and receiving
@@ -38,16 +34,6 @@ namespace Server.Networking
         /// </summary>
         private readonly UdpClient _client;
 
-        /// <summary>
-        /// Dictionary which contains all information about needed acknoledgements.
-        /// Ensures specific messages are sent. When an ensured message is sent,
-        /// it's ID (ulong) is stored in this Dictionary, as well as the time at
-        /// which it was sent. Periodically, this Dictionary is checked and, upon
-        /// a time which a values been in it longer than a specified timeout,
-        /// it resends the message. Acknowledgements that do come remove the
-        /// value from the Dictionary.
-        /// </summary>
-        private Dictionary<IPEndPoint, List<AckResolver>> _resolverBuffer;
         private readonly object _listLock = new object();
 
         /// <summary>
@@ -84,14 +70,15 @@ namespace Server.Networking
         public NetworkDatagramHandler(in int port)
         {
             _client = new UdpClient(port);
+            _ackResolver = new AckResolver();
+            _ackResolver.AckTimedOut += (_, ackData) => SendMessage(ackData);
 
-            _resolverBuffer = new Dictionary<IPEndPoint, List<AckResolver>>();
             _ackCurrentIndices = new Dictionary<IPEndPoint, ulong>();
             _ackExpectedIndices = new Dictionary<IPEndPoint, ulong>();
             _lastMessages = new Dictionary<IPEndPoint, DateTime>();
 
-            // Start the AckResolver
-            new Thread(StartAckResolver){ IsBackground = true }.Start();
+            // Start the AckResolver and Begin recieving
+            new Thread(CheckClientDisconnections){ IsBackground = true }.Start();
             new Thread(StartReceiving){ IsBackground = true }.Start();
         }
 
@@ -104,7 +91,6 @@ namespace Server.Networking
         /// <param name="endPoints">The client(s) to send the datagram to</param>
         public void SendMessage(in string message, in bool isReliable, params IPEndPoint[] endPoints)
         {
-            List<AckResolver> ackList;
             ulong ackIndex;
             byte[] msgBytes; 
 
@@ -113,11 +99,7 @@ namespace Server.Networking
                 if(isReliable)
                 {
                     // Since this code is read-only, it doesn't need to be locked
-                    if(!_resolverBuffer.TryGetValue(endPoint, out ackList))
-                        ackList = new List<AckResolver>();
-
-                    if(ackList.Count >= 100) continue;
-
+                    if(_ackResolver.IsClientBufferFull(endPoint)) continue;
 
                     // Update the _ackLocalToRemoteCounts to reflect the new
                     // # of reliable messages sent to specific client (+ 1)
@@ -131,7 +113,7 @@ namespace Server.Networking
                     // Add a new AckResolver to the resolver buffer, which will
                     // resend the datagram if the timeout is reached
                     // before receiving an ACK
-                    AddAckResolver(
+                    _ackResolver.AddResolver(
                         new (
                             AckIndex: ackIndex,
                             IPEndPoint: endPoint,
@@ -155,7 +137,7 @@ namespace Server.Networking
         /// is already in the buffer, so there's no need to add it again.
         /// </summary>
         /// <param name="resolver">The AckResolver with the datagram info</param>
-        private void SendMessage(in AckResolver resolver)
+        private void SendMessage(in AckResolverData resolver)
         {
             byte[] msgBytes;
 
@@ -167,64 +149,6 @@ namespace Server.Networking
 
         public void SendToAll(string data, bool isReliable) => 
             SendMessage(data, isReliable, _ackExpectedIndices.Keys.ToArray());
-
-        /// <summary>
-        /// Adds a new AckResolver to the resolver buffer
-        /// </summary>
-        /// <param name="resolver">The new AckResolver to add</param>
-        private void AddAckResolver(in AckResolver resolver)
-        {
-            List<AckResolver> ackList;
-
-            lock(_listLock)
-            {
-                // Retrieve the AckResolver List (if it exists) for
-                // the specified connection, and add the new AckResolver
-                // to the List
-                if(!_resolverBuffer.TryGetValue(resolver.IPEndPoint, out ackList))
-                    ackList = new List<AckResolver>();
-
-                lock(_listLock) { 
-                    ackList.Add(resolver); 
-                    ackList.Sort((ack1, ack2) => ack1.AckIndex.CompareTo(ack2.AckIndex));
-                }
-
-                _resolverBuffer[resolver.IPEndPoint] = ackList;
-            }
-        }
-
-        private void AcceptAck(in IPEndPoint endPoint, ulong ack)
-        {
-            List<AckResolver> resolverList;
-            int index;
-            lock(_listLock)
-            {
-                if(_resolverBuffer.TryGetValue(endPoint, out resolverList))
-                {
-                    index = resolverList.FindIndex(res => res.AckIndex == ack);
-                    if(index != -1) resolverList.RemoveAt(index);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resends the earliest reliable datagram, using
-        /// the ack resolver.
-        /// </summary>
-        /// <param name="endPoint">The end point to send the datagram to</param>
-        private void ResendRel(in IPEndPoint endPoint)
-        {
-            List<AckResolver> list;
-            AckResolver resolver;
-            lock(_listLock)
-            {
-                if(_resolverBuffer.TryGetValue(endPoint, out list))
-                {
-                    if((resolver = list.First()) != null)
-                        SendMessage(resolver);
-                }
-            }
-        }
 
         /// <summary>
         /// Converts an incoming datagram into the correct
@@ -251,7 +175,9 @@ namespace Server.Networking
             };
         }
 
-        #region Multithreaded Sub-processes
+
+        #region Multithreadded Methods
+
         /// <summary>
         /// The system which handles recieving datagrams, converting
         /// them to their appropriate type, and passing basic information
@@ -282,7 +208,6 @@ namespace Server.Networking
                 lock(_expectedLock)
                 {
                     _ackExpectedIndices.TryGetValue(endPoint, out ackExpected);
-
 
                     switch(datagram)
                     {
@@ -316,11 +241,11 @@ namespace Server.Networking
 
                         // Message contains request to resend packages
                         // Resend earliest package
-                        case Resend: ResendRel(endPoint);                                   break;
+                        case Resend: _ackResolver.ResendRel(endPoint);                                   break;
 
                         // Message is an acknowledgement datagram
                         // Accept and remove awaiting AckResolver
-                        case Ack ack: AcceptAck(endPoint, ack.AckIndex);                    break;
+                        case Ack ack: _ackResolver.AcceptAck(endPoint, ack.AckIndex);                    break;
 
                         // Message is unreliable - invoke MessageRecieved event
                         case Unreliable unrel: 
@@ -342,37 +267,15 @@ namespace Server.Networking
             }
         }
 
-        /// <summary>
-        /// Initiates the AckListener, which will routinely send
-        /// reliable messages every time its AckResolver times out
-        /// in the resolver buffer.
-        /// </summary>
-        private void StartAckResolver()
+        private void CheckClientDisconnections()
         {
-            AckResolver resolver;
-
             while(true)
             {
-                Thread.Sleep(100);
-                
                 lock(_listLock)
                 {
-                    int count = 0;
-                    foreach(var list in _resolverBuffer.Values)
-                    {
-                        count += list.Count;
-                        resolver = list.FirstOrDefault();
-                        if(DateTime.Now.Ticks - resolver?.TicksStart > timeout)
-                        {
-                            foreach(var res in list)
-                                SendMessage(res);
-                        }
-                    }
-                    Console.WriteLine($"Average resolver size: { (_resolverBuffer.Count == 0 ? 0 : count / _resolverBuffer.Count) }");
-
                     foreach(var pair in _lastMessages)
                     {
-                        if(DateTime.UtcNow - pair.Value > TimeSpan.FromSeconds(7.5f) && _resolverBuffer.ContainsKey(pair.Key))
+                        if(DateTime.UtcNow - pair.Value > TimeSpan.FromSeconds(7.5f))
                         {
                             LostConnection.Invoke(null, new DatagramCallback (
                             Data: string.Empty,
@@ -380,17 +283,21 @@ namespace Server.Networking
 
                             SendToCaller: (data, isRel) => SendMessage(data, isRel, pair.Key),
                             SendToOthers: (data, isRel) => SendMessage(
-                                    data, isRel, _ackExpectedIndices
-                                        .Keys.Where(k => k != pair.Key).ToArray()
-                                    ),
+                                data, isRel, _ackExpectedIndices
+                                    .Keys.Where(k => k != pair.Key).ToArray()
+                            ),
                             SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
-                                        .Keys.ToArray()
+                                .Keys.ToArray()
                             )));
-                            lock(_listLock) { _resolverBuffer.Remove(pair.Key); _lastMessages.Remove(pair.Key); }
+                                
                             lock(_expectedLock) { _ackExpectedIndices.Remove(pair.Key); }
+                            _ackResolver.RemoveClientEndPoint(pair.Key); 
+                            _lastMessages.Remove(pair.Key);
                         }
                     }
                 }
+
+                Thread.Sleep(100);
             }
         }
         #endregion
