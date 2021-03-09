@@ -10,6 +10,6 @@ namespace Server.Networking.NetworkEvents
     /// </summary>
     public record Pinged : NetworkEvent 
     {
-        public static string CreateString() => "Pinged";
+        public string CreateString() => "Pinged";
     }
 }

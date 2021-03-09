@@ -115,18 +115,22 @@ namespace Server.Networking
         {
             Debug.Log(text);
             var args = text.Split(new string[] { "::" }, StringSplitOptions.None); 
-            
-            return args[0] switch
+
+            try 
             {
-                "ClientMovement" => new ClientMovement(args[1]),
-                "PlayerJoined" => new PlayerJoined(args[1]),
-                "PlayerLeft" => new PlayerLeft(args[1]),
-                "Planted" => new Planted(args[1]),
-                "Welcome" => new Welcome(args[1]),
-                "CreatedCritter" => new CreatedCritter(args[1]),
-                "MovedCritter" => new MovedCritter(args[1]),
-                _ => null
-            };
+                return args[0] switch
+                {
+                    "ClientMovement" => new ClientMovement(args[1]),
+                    "PlayerJoined" => new PlayerJoined(args[1]),
+                    "PlayerLeft" => new PlayerLeft(args[1]),
+                    "Planted" => new Planted(args[1]),
+                    "Welcome" => new Welcome(args[1]),
+                    "CreatedCritter" => new CreatedCritter(args[1]),
+                    "MovedCritter" => new MovedCritter(args[1]),
+                    _ => null
+                };
+            }
+            catch(Exception) { return null; }
         }
 
         /// <summary>

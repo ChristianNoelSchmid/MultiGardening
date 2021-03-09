@@ -1,3 +1,4 @@
+using System;
 using Server.Models;
 using Server.Networking.NetworkEvents;
 using Server.State;
@@ -67,15 +68,19 @@ namespace Server.Networking
         {
             var args = text.Split("::"); 
             
-            return args[0] switch
+            try
             {
-                "ClientMovement" => new ClientMovement(args[1]),
-                "Pinged" => new Pinged(),
-                "PlayerJoined" => new PlayerJoined(args[1]),
-                "PlayerLeft" => new PlayerLeft(args[1]),
-                "Planted" => new Planted(args[1]),
-                _ => null
-            };
+                return args[0] switch
+                {
+                    "ClientMovement" => new ClientMovement(args[1]),
+                    "Pinged" => new Pinged(),
+                    "PlayerJoined" => new PlayerJoined(args[1]),
+                    "PlayerLeft" => new PlayerLeft(args[1]),
+                    "Planted" => new Planted(args[1]),
+                    _ => null
+                };
+            }
+            catch(Exception) { return null; }
         }
 
         /// <summary>
@@ -132,7 +137,7 @@ namespace Server.Networking
 
                 case Pinged pinged:
 
-                    callback.SendToCaller(Pinged.CreateString(), false);        break;
+                    callback.SendToCaller((new Pinged()).CreateString(), false);        break;
 
                 default: return;
             };

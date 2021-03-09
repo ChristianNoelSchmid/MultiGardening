@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using Server.Networking.Datagrams;
 using UnityEngine;
+using Server.Networking.NetworkEvents;
 
 namespace Server.Networking
 {
@@ -108,7 +109,7 @@ namespace Server.Networking
                 _listeningThread = new Thread(StartReceiving) { IsBackground = true };
                 _listeningThread.Start();
 
-                var pingMsg = Encoding.ASCII.GetBytes("Pinged");
+                var pingMsg = Encoding.ASCII.GetBytes((new Pinged()).CreateString());
                 _client.Send(pingMsg, pingMsg.Length);
 
                 Thread.Sleep(1500);
@@ -255,17 +256,21 @@ namespace Server.Networking
 
             string suffix = msg.Split(new string[] { "::" }, StringSplitOptions.None).Last();
 
-            switch(suffix)
+            try
             {
-                case string s when s.StartsWith("ACK"):
-                    return new Ack(msg);
-                case string s when s.StartsWith("REL"):
-                    return new Reliable(msg);
-                case string s when s.StartsWith("RES"):
-                    return new Resend();
-                default:
-                    return new Unreliable(msg);
-            };
+                switch(suffix)
+                {
+                    case string s when s.StartsWith("ACK"):
+                        return new Ack(msg);
+                    case string s when s.StartsWith("REL"):
+                        return new Reliable(msg);
+                    case string s when s.StartsWith("RES"):
+                        return new Resend();
+                    default:
+                        return new Unreliable(msg);
+                };
+            }
+            catch(Exception) { return null; }
         }
 
         #region Multithreaded Sub-processes

@@ -162,17 +162,21 @@ namespace Server.Networking
             string msg = Encoding.ASCII.GetString(datagram);
             string suffix = msg.Split("::").Last();
 
-            switch(suffix)
+            try
             {
-                case string s when s.StartsWith("ACK"):
-                    return new Ack(msg);
-                case string s when s.StartsWith("REL"):
-                    return new Reliable(msg);
-                case string s when s.StartsWith("RES"):
-                    return new Resend();
-                default:
-                    return new Unreliable(msg);
-            };
+                switch(suffix)
+                {
+                    case string s when s.StartsWith("ACK"):
+                        return new Ack(msg);
+                    case string s when s.StartsWith("REL"):
+                        return new Reliable(msg);
+                    case string s when s.StartsWith("RES"):
+                        return new Resend();
+                    default:
+                        return new Unreliable(msg);
+                };
+            }
+            catch(Exception) { return null; }
         }
 
 
@@ -267,6 +271,9 @@ namespace Server.Networking
             }
         }
 
+        // Checks to see if any Client has not sent a datagram for longer than 7.5 seconds.
+        // If this is the case, the Client is removed from the Server's memory, as well
+        // as from the AckResolver's buffer
         private void CheckClientDisconnections()
         {
             while(true)
@@ -277,6 +284,8 @@ namespace Server.Networking
                     {
                         if(DateTime.UtcNow - pair.Value > TimeSpan.FromSeconds(7.5f))
                         {
+                            // Invoke the LostConnection method, to be used by the 
+                            // NetworkEventHandler to dictate PlayerLeft messages
                             LostConnection.Invoke(null, new DatagramCallback (
                             Data: string.Empty,
                             EndPoint: pair.Key,
@@ -289,7 +298,8 @@ namespace Server.Networking
                             SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
                                 .Keys.ToArray()
                             )));
-                                
+
+                            // Remove the Client's data from the Server                                
                             lock(_expectedLock) { _ackExpectedIndices.Remove(pair.Key); }
                             _ackResolver.RemoveClientEndPoint(pair.Key); 
                             _lastMessages.Remove(pair.Key);
