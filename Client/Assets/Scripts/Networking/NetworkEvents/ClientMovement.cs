@@ -28,6 +28,6 @@ namespace Server.Networking.NetworkEvents
             };
         }
 
-        public string CreateString() => $"Pinged::{CallerInfo.Serialize()}";
+        public string CreateString() => $"ClientMovement::{CallerInfo.Serialize()}";
     }
 }
