@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 
+/// <summary>
+/// A ScriptableObject representing a type of Plant
+/// </summary>
 [CreateAssetMenu]
 public class Plant : ScriptableObject
 {

@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Allows cycling through all possible Plants that
+/// can be set down by Player
+/// </summary>
 public class SelectedPlant : MonoBehaviour
 {
     public EventHandler<Plant> OnPlantUpdated;

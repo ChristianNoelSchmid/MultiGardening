@@ -36,16 +36,19 @@ namespace Server.Networking
             // the client is also removed from the NetworkEventHandler, and
             // the relevant information is sent to each connected client.
             datagramHandler.LostConnection += (_, callback) => {
-                callback.SendToAll(
-                    new PlayerLeft
-                    {
-                        CallerInfo = new DataModel(
-                            Secret: "Secret",
-                            _clientIds[callback.EndPoint]
-                        )
-                    }.CreateString(), true
-                );
-                _clientIds = _clientIds.Remove(callback.EndPoint);
+                if(_clientIds.ContainsKey(callback.EndPoint))
+                {
+                    callback.SendToAll(
+                        new PlayerLeft
+                        {
+                            CallerInfo = new DataModel(
+                                Secret: "Secret",
+                                _clientIds[callback.EndPoint]
+                            )
+                        }.CreateString(), true
+                    );
+                    _clientIds = _clientIds.Remove(callback.EndPoint);
+                }
             };
 
             // Connect the NetworkDatagramHandler's output with the NetworkEventHandler's input,
@@ -66,10 +69,11 @@ namespace Server.Networking
             
             return args[0] switch
             {
+                "ClientMovement" => new ClientMovement(args[1]),
+                "Pinged" => new Pinged(),
                 "PlayerJoined" => new PlayerJoined(args[1]),
                 "PlayerLeft" => new PlayerLeft(args[1]),
                 "Planted" => new Planted(args[1]),
-                "Pinged" => new Pinged(args[1]),
                 _ => null
             };
         }
@@ -104,7 +108,7 @@ namespace Server.Networking
                     // Increment the client Id index
                     ++_clientIdIndex;                                   break;
 
-                case Pinged pinged: 
+                case ClientMovement pinged: 
 
                     // Pinged messages can simply be forwarded to the other clients
                     callback.SendToOthers(callback.Data, false);        break;
@@ -125,6 +129,10 @@ namespace Server.Networking
                             }
                         ).CreateString(), true);    
                     }                                                   break;
+
+                case Pinged pinged:
+
+                    callback.SendToCaller(Pinged.CreateString(), false);        break;
 
                 default: return;
             };

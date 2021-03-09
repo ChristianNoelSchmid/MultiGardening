@@ -8,6 +8,9 @@ using UnityEngine;
 using Server.Models;
 using Server.Networking;
 
+/// <summary>
+/// Handles the placements of Plants on the map
+/// </summary>
 public class PlantPlacements : MonoBehaviour
 {
     [SerializeField]
@@ -29,6 +32,9 @@ public class PlantPlacements : MonoBehaviour
 
     private void Update()
     {
+        // If the player has clicked a new location to plant,
+        // inform the NetworkEventHandler to send a request
+        // to the Server
         if(PlayerControls.PlantClicked)
         {
             _eventHandler.TryPlantPlacement(
@@ -46,6 +52,11 @@ public class PlantPlacements : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Places a new Plant onto the map, using supplied PlantPlacement info,
+    /// and the _plants objects
+    /// </summary>
+    /// <param name="placement">The Plant placement information</param>
     public void Place(PlantPlacement placement)
     {
         _placements.Add(placement.Position, placement);
@@ -59,6 +70,10 @@ public class PlantPlacements : MonoBehaviour
         newPlant.SetPlantStartTime(placement.TimeToComplete);
     }
 
+    /// <summary>
+    /// Imports all Plants from the Collection
+    /// </summary>
+    /// <param name="placements">The collection of PlantPlacements</param>
     public void ImportPlants(IEnumerable<PlantPlacement> placements)
     {
         foreach(var placement in placements)

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Updates the Login UI to display info based
+/// on a Player's attempt to login
+/// </summary>
 public class UpdateLogin : MonoBehaviour
 {
     private CanvasGroup _group;

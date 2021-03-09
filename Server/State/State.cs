@@ -40,6 +40,9 @@ namespace Server.State
         private readonly Range rangeX = 0..14;
         private readonly Range rangeY = 0..5;
 
+        // Reference to the NetworkDatagramHandler
+        private NetworkDatagramHandler _datagramHandler;
+
         /// <summary>
         /// Retrieves a StateSnapshot of the Server's current State
         /// (plants and critters)
@@ -59,8 +62,6 @@ namespace Server.State
 
         // Dictionary for all PlantData in current ServerState
         private ImmutableDictionary<GridPosition, PlantData> _plantData;
-        private ImmutableList<int> _plantTypeCounts;
-        private NetworkDatagramHandler _datagramHandler;
 
         // Dictionary for all CritterData in current ServerState
         private ImmutableDictionary<GridPosition, CritterData> _critterData;
@@ -75,10 +76,6 @@ namespace Server.State
             _critterData = ImmutableDictionary<GridPosition, CritterData>.Empty;
             _datagramHandler = datagramHandler;
             _critterId = 0;
-
-            _plantTypeCounts = ImmutableList<int>.Empty;
-            for(int i = 0; i < _plantInfo.Length; ++i)
-                _plantTypeCounts = _plantTypeCounts.Add(0);
 
             _critterTypeCounts = ImmutableList<int>.Empty;
             for(int i = 0; i < _critterInfo.Length; ++i)
@@ -115,11 +112,6 @@ namespace Server.State
                     new (placement.PlantType,
                          DateTime.UtcNow.AddSeconds(_plantInfo[placement.PlantType].SecondsToGrow))
                 );
-
-                _plantTypeCounts = _plantTypeCounts.SetItem(
-                    (int)placement.PlantType, 
-                    _plantTypeCounts[(int)placement.PlantType] + 1
-                );
             }
 
             // Return the same placement, with an updated
@@ -136,12 +128,16 @@ namespace Server.State
             );
         }     
 
+        // Determines whether new Critters need to be spawned by checking the
+        // ratio of particular Plants to their attracted Critter.
         private void CritterSpawner()
         {
             while(true)
             {
                 lock(_stateLock)
                 {
+                    // Create a list that represents the count for each Plant
+                    // associated by their Critter attraction type
                     var desiredCritterCount = _critterInfo.Select(
                         cInfo => _plantData.Values.Where(
                                 data => cInfo.PlantTypeAttractions.Contains(data.Type) &&
@@ -149,6 +145,9 @@ namespace Server.State
                             ).Count()
                     ).ToArray();
 
+                    // Cycle through the recorded critter type counts, and determine
+                    // if there's any lack of Critters. If so, spawn the Critter, and send
+                    // the information back to all clients.
                     for(int i = 0; i < _critterTypeCounts.Count; ++i) 
                     {
                         while(_critterTypeCounts[i] < desiredCritterCount[i] / 5)
@@ -163,10 +162,16 @@ namespace Server.State
                         }
                     }
 
+                    // Check whether any Critters already on the map
+                    // need to be moved to a new position
                     foreach(var pos in _critterData.Keys)
                     {
                         if(_critterData[pos].UpdateTime < DateTime.UtcNow)
                         {
+
+                            // If they do, locate a new GridPosition based on
+                            // the Critters Plant attraction types. Update the Dictionary
+                            // to include the new position
                             var oldData = _critterData[pos];
                             _critterData = _critterData.Remove(pos);
                             var newPosition = FindOpenCritterPos(oldData.Type);
@@ -179,6 +184,8 @@ namespace Server.State
                                 }
                             );
 
+                            // Send the new critter movement information to
+                            // the Clients
                             _datagramHandler.SendToAll(
                                 new MovedCritter
                                 {
@@ -196,6 +203,8 @@ namespace Server.State
             }
         }
 
+        // Spawns a new critter, returning a CritterPlacement reference ready
+        // to return to the Clients
         private CritterPlacement SpawnCritter(int type)
         {
             _critterTypeCounts = _critterTypeCounts.SetItem(type, _critterTypeCounts[type] + 1);
@@ -217,6 +226,9 @@ namespace Server.State
             );
         }
 
+        // Determines a position where there exists a Plant
+        // which the Critter type given is attracted to, and which
+        // currently is hosting no Critters.
         private GridPosition FindOpenCritterPos(int type)
         {
             var openPositions = _plantData.Keys.Where(

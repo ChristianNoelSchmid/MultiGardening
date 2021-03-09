@@ -157,7 +157,7 @@ namespace Server.Tests
             };
 
             Assert.AreEqual(
-                new Pinged
+                new ClientMovement
                 {
                     CallerInfo = new DataModel
                     {

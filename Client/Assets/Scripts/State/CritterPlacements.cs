@@ -6,6 +6,9 @@ using UnityEngine;
 using Server.Networking;
 using Server.Networking.NetworkEvents;
 
+/// <summary>
+/// Handles the placement and movement of Critters on the map
+/// </summary>
 public class CritterPlacements : MonoBehaviour
 {
     [SerializeField]
@@ -23,11 +26,15 @@ public class CritterPlacements : MonoBehaviour
         _critterMovements = new Dictionary<int, CritterMovement>();
     }
 
+    /// <summary>
+    /// Creates a new Critter by CritterPlacement info, using the _critters
+    /// objects to instantiate the particular one.
+    /// </summary>
+    /// <param name="created">The CritterPlacement represented the created Critter</param>
+    /// <returns></returns>
     public CritterMovement CreateCritter(CritterPlacement created)
     {
-        float x = Mathf.Sign(Random.Range(-10, 10));
-        float y = Mathf.Sign(Random.Range(-10, 10));
-        var spawnPos = new Vector2(22.5f, 11.5f) + (new Vector2(25.5f, 14.5f) * new Vector2(x, y));
+        var spawnPos = new Vector2(22.5f, -3.0f);
 
         var newMovement = Instantiate(_critters[created.Type], spawnPos, Quaternion.identity)
             .GetComponent<CritterMovement>(); 
@@ -38,6 +45,10 @@ public class CritterPlacements : MonoBehaviour
         return newMovement;
     }
 
+    /// <summary>
+    /// Sets the target the specified Critter (by id) to a new position
+    /// </summary>
+    /// <param name="moved">The data representing the Critter's Id and new position</param>
     public void MoveCritter(CritterPlacement moved)
     {
         _critterMovements[moved.Id].SetTarget(
@@ -45,6 +56,11 @@ public class CritterPlacements : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// Imports all Critters from the collection of critters,
+    /// spawning them at their specific locations, rather than off the map
+    /// </summary>
+    /// <param name="placement">The collection of CritterPlacements</param>
     public void ImportCritters(IEnumerable<CritterPlacement> placement)
     {
         foreach(var critter in placement)

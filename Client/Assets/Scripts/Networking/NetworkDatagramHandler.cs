@@ -32,6 +32,11 @@ namespace Server.Networking
         [SerializeField]
         private NetworkEventHandler _eventHandler;
 
+        [SerializeField]
+        private DisplayDisconnection _displayDisconnection;
+
+        private bool _connected = false;
+
         /// <summary>
         /// Length of ticks for a packet timeout
         /// </summary>
@@ -89,6 +94,9 @@ namespace Server.Networking
             _resolverBuffer = new List<AckResolver>();
             _ackExpectedIndex = 0;
             _ackCurrentIndex = 0;
+
+            // Start the AckResolver, and Listening Thread
+            _resolverThread = new Thread(StartAckResolver){ IsBackground = true };
         }
 
         public bool StartHandler(string ip)
@@ -96,23 +104,25 @@ namespace Server.Networking
             try
             {
                 _client = new UdpClient(ip, _port);
+
+                _listeningThread = new Thread(StartReceiving) { IsBackground = true };
+                _listeningThread.Start();
+
+                var pingMsg = Encoding.ASCII.GetBytes("Pinged");
+                _client.Send(pingMsg, pingMsg.Length);
+
+                Thread.Sleep(1500);
+                if(!_connected)
+                    throw new Exception("Did not receive response from Server.");
             }
-            catch (Exception ex) when (
-                ex is SocketException || 
-                ex is FormatException
-            ) {
+            catch (Exception ex)
+            {
                 Debug.LogError(ex.Message);
+                _listeningThread?.Abort();
                 return false;        
             }
 
-            // Start the AckResolver, and Listening Thread
-            _resolverThread = new Thread(StartAckResolver){ IsBackground = true };
-            _listeningThread = new Thread(StartReceiving) { IsBackground = true };
-
-
             _resolverThread.Start();
-            _listeningThread.Start();
-
             _eventHandler.StartHandler();
 
             return true;
@@ -160,7 +170,14 @@ namespace Server.Networking
             else
                 msgBytes = Encoding.ASCII.GetBytes(Unreliable.CreateString(message));
 
-            _client.Send(msgBytes, msgBytes.Length);
+            try
+            {
+                _client.Send(msgBytes, msgBytes.Length);
+            }
+            catch (SocketException)
+            {
+                _displayDisconnection.Display();
+            }
         }
 
         /// <summary>
@@ -226,6 +243,16 @@ namespace Server.Networking
         private Datagram ParseDatagram(byte[] datagram)
         {
             string msg = Encoding.ASCII.GetString(datagram);
+
+            // If the message simply contains "Pinged", it means
+            // the Server has responded to the Client's ping. Set
+            // _connected and return null
+            if(msg == "Pinged")
+            {
+                _connected = true;
+                return null;
+            }
+
             string suffix = msg.Split(new string[] { "::" }, StringSplitOptions.None).Last();
 
             switch(suffix)
@@ -257,50 +284,58 @@ namespace Server.Networking
             {
                 if(!IsListening) continue;
 
-                bytes = _client.Receive(ref endPoint); 
-                
-                if(!IsListening) continue;
-
-                datagram = ParseDatagram(bytes);
-
-                switch(datagram)
+                try
                 {
-                    // Datagram is reliable, but the ACK index is too high.
-                    // Ask client to resend awaiting data.
-                    case Reliable rel when rel.AckIndex > _ackExpectedIndex:
-                        SendDatagram(Resend.CreateString(), false);                        break;
+                    bytes = _client.Receive(ref endPoint); 
+                
+                    if(!IsListening) continue;
 
-                    // Message is reliable, but the ACK index is too low.
-                    // Already recieved datagram: simply resend ACK and return
-                    case Reliable rel when rel.AckIndex < _ackExpectedIndex:
-                        SendDatagram(Ack.CreateString(rel.AckIndex), false);               break;
+                    datagram = ParseDatagram(bytes);
 
-                    // Message is reliable, and was the expected index.
-                    // Accept message, send ACK, and invoke MessageRecieved event
-                    case Reliable rel:
-                        _ackExpectedIndex += 1;
-                        SendDatagram(Ack.CreateString(rel.AckIndex), false);
-                        MessageRecieved.Invoke(null, new DatagramCallback
-                        {
-                            Data = rel.Data,
-                            SendToServer = (data, isRel) => SendDatagram(data, isRel)
-                        });                                                               break;
+                    switch(datagram)
+                    {
+                        // Datagram is reliable, but the ACK index is too high.
+                        // Ask client to resend awaiting data.
+                        case Reliable rel when rel.AckIndex > _ackExpectedIndex:
+                            SendDatagram(Resend.CreateString(), false);                        break;
 
-                    // Message contains request to resend packages
-                    // Resend earliest package
-                    case Resend _: ResendRel();                                           break;
+                        // Message is reliable, but the ACK index is too low.
+                        // Already recieved datagram: simply resend ACK and return
+                        case Reliable rel when rel.AckIndex < _ackExpectedIndex:
+                            SendDatagram(Ack.CreateString(rel.AckIndex), false);               break;
 
-                    // Message is an acknowledgement datagram
-                    // Accept and remove awaiting AckResolver
-                    case Ack ack: AcceptAck(ack.AckIndex);                                break;
+                        // Message is reliable, and was the expected index.
+                        // Accept message, send ACK, and invoke MessageRecieved event
+                        case Reliable rel:
+                            _ackExpectedIndex += 1;
+                            SendDatagram(Ack.CreateString(rel.AckIndex), false);
+                            MessageRecieved.Invoke(null, new DatagramCallback
+                            {
+                                Data = rel.Data,
+                                SendToServer = (data, isRel) => SendDatagram(data, isRel)
+                            });                                                               break;
 
-                    // Message is unreliable - invoke MessageRecieved event
-                    case Unreliable unrel: 
-                        MessageRecieved.Invoke(null, new DatagramCallback
-                        {
-                            Data = unrel.Data,
-                            SendToServer = (data, isRel) => SendDatagram(data, isRel)
-                        });                                                               break; 
+                        // Message contains request to resend packages
+                        // Resend earliest package
+                        case Resend _: ResendRel();                                           break;
+
+                        // Message is an acknowledgement datagram
+                        // Accept and remove awaiting AckResolver
+                        case Ack ack: AcceptAck(ack.AckIndex);                                break;
+
+                        // Message is unreliable - invoke MessageRecieved event
+                        case Unreliable unrel: 
+                            MessageRecieved.Invoke(null, new DatagramCallback
+                            {
+                                Data = unrel.Data,
+                                SendToServer = (data, isRel) => SendDatagram(data, isRel)
+                            });                                                               break; 
+                    }
+                }
+                catch(SocketException se)
+                {
+                    _displayDisconnection.Display();
+                    throw se;
                 }
             }
         }

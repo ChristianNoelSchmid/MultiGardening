@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Controls Critter's movements from Plant to Plant
+/// </summary>
 public class CritterMovement : MonoBehaviour
 {
     [SerializeField]
@@ -34,8 +37,12 @@ public class CritterMovement : MonoBehaviour
 
     void Update()
     {
+        // If the Critter has not reached it's destination, have it Lerp
+        // to the target location
         if(!_reachedTarget)
         {
+            // Simply place it to the correct location when it's close enough (to ensure it doesn't)
+            // spend forever trying to slow down with Lerp
             if(Vector2.Distance(_transform.position, _target) < _speed * Time.deltaTime)
                 _reachedTarget = true;
 
@@ -53,6 +60,7 @@ public class CritterMovement : MonoBehaviour
                 );
             }
         } 
+        // Otherwise, bumble the Critter, using Perlin noise and the _bumbleLevel
         else
         {
             var perlinNoise = new Vector2 (
@@ -71,6 +79,10 @@ public class CritterMovement : MonoBehaviour
             _animator.SetBool("moving", !_reachedTarget);
     }
 
+    /// <summary>
+    /// Establishes a new destination for the Critter
+    /// </summary>
+    /// <param name="target">The new destination</param>
     public void SetTarget(Vector2 target)
     {
         _target = target + new Vector2 (

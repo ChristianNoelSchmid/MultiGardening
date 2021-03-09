@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Updates the UI of the selected plant to update
+/// to the appropriate image when the selection changes
+/// </summary>
 public class UpdatePlantImage : MonoBehaviour
 {
     [SerializeField]

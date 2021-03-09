@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Handles other Client's movements, syncing
+/// their markers to their positions
+/// </summary>
 public class RemoteMovement : MonoBehaviour
 {
     [SerializeField]
@@ -22,11 +26,6 @@ public class RemoteMovement : MonoBehaviour
         );
     }
 
-    public void SetMovement(ActorMovement movement)
-    {
-        _position = new Vector2(movement.Position.Item1, movement.Position.Item2);
-        _isFlipped = movement.IsFlipped;
-    }
     public void SetMovement(GridPosition position) 
     {
         _position = new Vector2(position.X, position.Y) * 3.0f;

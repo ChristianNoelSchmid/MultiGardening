@@ -7,6 +7,10 @@ using UnityEngine;
 
 namespace Server.Networking
 {
+    /// <summary>
+    /// Handles the transfer of all Network events to their
+    /// associated processes.
+    /// </summary>
     public class NetworkEventHandler : MonoBehaviour
     {
         private NetworkDatagramHandler _datagramHandler;
@@ -40,13 +44,18 @@ namespace Server.Networking
 
             _waitForInterval = new WaitForSeconds(_playerUpdateIntevalSeconds);
             _datagramHandler = GetComponent<NetworkDatagramHandler>();
+
+            // Set the datagram handler given, upon recieving a message,
+            // to send it to this NetworkEventHandler for parsing
             _datagramHandler.MessageRecieved += (_, callback) =>
-            {
                 _callbackQueue.Enqueue(callback);
-            };
+
             _callbackQueue = new Queue<DatagramCallback>();
         }
 
+        /// <summary>
+        /// Begins the handler, sending the first PlayerJoined message
+        /// </summary>
         public void StartHandler()
         {
             if(!_networkingEnabled) return;             
@@ -66,17 +75,20 @@ namespace Server.Networking
         {
             if(!_networkingEnabled) return;
 
+            // If there is an event in the queue, call it
             while(_callbackQueue.Count > 0)
                 TransferEvent(_callbackQueue.Dequeue());
         }
 
+        // Periodically sends ping information to the Server, 
+        // with the local Player's GridPosition
         private IEnumerator BeginTransfer()
         {
             while(true)
             {
                 yield return _waitForInterval;
                 _datagramHandler.SendDatagram(
-                    new Pinged
+                    new ClientMovement
                     {
                         CallerInfo = new DataModel<GridPosition>
                         {
@@ -106,21 +118,28 @@ namespace Server.Networking
             
             return args[0] switch
             {
+                "ClientMovement" => new ClientMovement(args[1]),
                 "PlayerJoined" => new PlayerJoined(args[1]),
                 "PlayerLeft" => new PlayerLeft(args[1]),
                 "Planted" => new Planted(args[1]),
-                "Pinged" => new Pinged(args[1]),
                 "Welcome" => new Welcome(args[1]),
                 "CreatedCritter" => new CreatedCritter(args[1]),
                 "MovedCritter" => new MovedCritter(args[1]),
                 _ => null
             };
         }
+
+        /// <summary>
+        /// Convert the parsed Event into an action, and return
+        /// a datagram to the Server if applicable
+        /// </summary>
+        /// <param name="callback">The callback method for returning a datagram to the Server.</param>
         private void TransferEvent(DatagramCallback callback)
         {
             switch(ParseEvent(callback.Data))
             {
-                case Welcome welcome: 
+                case Welcome welcome:  // On Welcome, get the player Id, update the map with the StateSnapshot
+                                       // info and begin the Player position transfer
 
                     _playerId = welcome.Snapshot.CallerId;
                     _secret = welcome.Snapshot.Secret;
@@ -128,31 +147,35 @@ namespace Server.Networking
                     _critterPlacements.ImportCritters(welcome.Snapshot.Value.CritterSnapshotData);
                     StartCoroutine(BeginTransfer());                            break;
 
-                case Pinged pinged:
+                case ClientMovement movement: // On ClientMovement, update the remote Client's position
 
-                    if(pinged.CallerInfo.CallerId == _playerId)                 return;
-                    _playerConnections.UpdateMarker(pinged);                    break;
+                    if(movement.CallerInfo.CallerId == _playerId)               return;
+                    _playerConnections.UpdateMarker(movement);                  break;
 
-                case Planted planted:
+                case Planted planted: // On Planted, add the new Plant to the PlantPlacements
 
                     _plantPlacements.Place(planted.Placement.Value);            break;
 
-                case CreatedCritter created:
+                case CreatedCritter created: // On CreatedCritter, add the new Critter to the CritterPlacements
 
                     _critterPlacements.CreateCritter(created.Placement);        break;
 
-                case MovedCritter moved:
+                case MovedCritter moved: // On MovedCritter, sync the local Player's CritterPlacements
 
                     _critterPlacements.MoveCritter(moved.Placement);            break;
 
-                case PlayerLeft left:
+                case PlayerLeft left: // On PlayerLeft, remove the Client's marker from the PlayerConnections
 
                     _playerConnections.RemoveMarker(left.CallerInfo.CallerId);  break;
 
             }
         }
 
-        #region public methods
+        /// <summary>
+        /// Attempts to place a Plant at the specified position, if there
+        /// isn't already one set in the Server.
+        /// </summary>
+        /// <param name="placement"></param>
         public void TryPlantPlacement(PlantPlacement placement) =>
             _datagramHandler.SendDatagram(
                 new Planted
@@ -165,6 +188,5 @@ namespace Server.Networking
                     }
                 }.CreateString(), true
             );
-        #endregion
     }
 }

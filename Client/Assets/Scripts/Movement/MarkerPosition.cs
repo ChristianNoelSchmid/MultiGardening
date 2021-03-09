@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Handles the local Player's Marker position
+/// </summary>
 public class MarkerPosition : MonoBehaviour
 {
     [SerializeField]
@@ -13,6 +16,9 @@ public class MarkerPosition : MonoBehaviour
 
     private void Update()
     {
+        // Base position off of PlayerControl's
+        // GridPosition, so the marker will snap to
+        // the grid
         if(PlayerControls.IsEnabled)
         {
             _transform.position = Vector2.Lerp(
@@ -21,6 +27,8 @@ public class MarkerPosition : MonoBehaviour
                 Time.deltaTime * _speed 
             );
         }
+        // If the PlayerControls are disabled, move the
+        // marker off screen.
         else
         {
             _transform.position = new Vector2(-8, -8);

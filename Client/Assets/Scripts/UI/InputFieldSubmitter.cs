@@ -7,6 +7,10 @@ using UnityEngine.UI;
 [System.Serializable]
 public class StringEvent : UnityEvent<string> { }
 
+/// <summary>
+/// Allows ENTER to be pressed when using an InputField
+/// to activate some action.
+/// </summary>
 public class InputFieldSubmitter : MonoBehaviour
 {
     public StringEvent _onInputEntered;
@@ -20,7 +24,6 @@ public class InputFieldSubmitter : MonoBehaviour
         if(Input.GetKeyUp(KeyCode.Return))
         {
             _onInputEntered.Invoke(_inputField.text);
-            Debug.Log("Entered!");
         }
     }
 }

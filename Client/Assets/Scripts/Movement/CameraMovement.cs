@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Controls Camera Movement and Zoom
+/// </summary>
 public class CameraMovement : MonoBehaviour
 {
     [SerializeField]
@@ -28,6 +31,8 @@ public class CameraMovement : MonoBehaviour
         _camera = GetComponent<Camera>();
         _rb2d = GetComponent<Rigidbody2D>();
 
+        // Create the Camera bounds, modeled by
+        // the map
         _cameraBounds = new Bounds();
         _cameraBounds.SetMinMax(
             new Vector2(-2.0f, -2.0f),
@@ -39,6 +44,8 @@ public class CameraMovement : MonoBehaviour
         CalculateCameraUnitSize();
     }
 
+    // Calculates Camera size, by orthographic size, converting
+    // it to Unity units
     private void CalculateCameraUnitSize() => 
         _cameraUnitSize = new Vector2(
             _camera.orthographicSize * Screen.width / Screen.height,
@@ -47,6 +54,7 @@ public class CameraMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+        // Calculate the Camera size, and move it's position / zoom
         CalculateCameraUnitSize();
         _rb2d.position = Vector2.Lerp(_rb2d.position, _cameraPosition, _speed * Time.fixedDeltaTime);
         _camera.orthographicSize = Mathf.Lerp(_camera.orthographicSize, _cameraZoom, _zoomSpeed * Time.fixedDeltaTime);
