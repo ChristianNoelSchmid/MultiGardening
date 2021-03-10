@@ -148,13 +148,11 @@ namespace Server.Networking.Resolvers
 
                 lock(_resolverLock)
                 {
-                    int count = 0;
                     // For each end point in the buffer, 
                     // check if the oldest one has reached the timeout length
                     // If so, resend the reliable datagram
                     foreach(var list in _resolverBuffer.Values)
                     {
-                        count += list.Count;
                         resolver = list.FirstOrDefault();
                         if(DateTime.Now.Ticks - resolver?.TicksStart > timeout)
                         {
@@ -162,7 +160,6 @@ namespace Server.Networking.Resolvers
                                 AckTimedOut?.Invoke(null, res);
                         }
                     }
-                    Console.WriteLine($"Avg. Res. Count: {(count == 0 ? 0 : count / _resolverBuffer.Count)}");
                 }
             }
         }

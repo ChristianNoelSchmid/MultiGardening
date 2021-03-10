@@ -14,6 +14,8 @@ namespace Server
             var state = new ServerState(datagramHandler);
             var eventHandler = new NetworkEventHandler(datagramHandler, state);
 
+            Console.WriteLine("Server started - ready to recieve datagrams");
+
             // Loop until Ctrl-C
             while (true);
         }
