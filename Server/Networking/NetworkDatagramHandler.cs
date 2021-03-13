@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -43,7 +43,7 @@ namespace Server.Networking
         /// To ensure that datagrams which need acknowledgements are not lost 
         /// in the network.
         /// </summary>
-        private Dictionary<IPEndPoint, ulong> _ackExpectedIndices;
+        private ImmutableDictionary<IPEndPoint, ulong> _ackExpectedIndices;
         private object _expectedLock = new object();
 
         /// <summary>
@@ -51,9 +51,9 @@ namespace Server.Networking
         /// of ack datagrams, per connection. A dictionary is needed as the local
         /// client may send different amounts of ensured datagrams to each client.
         /// </summary>
-        private Dictionary<IPEndPoint, ulong> _ackCurrentIndices;
+        private ImmutableDictionary<IPEndPoint, ulong> _ackCurrentIndices;
 
-        private Dictionary<IPEndPoint, DateTime> _lastMessages;
+        private ImmutableDictionary<IPEndPoint, DateTime> _lastMessages;
 
         public EventHandler<DatagramCallback> MessageRecieved;
         public EventHandler<DatagramCallback> LostConnection;
@@ -73,9 +73,9 @@ namespace Server.Networking
             _ackResolver = new AckResolver();
             _ackResolver.AckTimedOut += (_, ackData) => SendMessage(ackData);
 
-            _ackCurrentIndices = new Dictionary<IPEndPoint, ulong>();
-            _ackExpectedIndices = new Dictionary<IPEndPoint, ulong>();
-            _lastMessages = new Dictionary<IPEndPoint, DateTime>();
+            _ackCurrentIndices = ImmutableDictionary<IPEndPoint, ulong>.Empty;
+            _ackExpectedIndices = ImmutableDictionary<IPEndPoint, ulong>.Empty;
+            _lastMessages = ImmutableDictionary<IPEndPoint, DateTime>.Empty;
 
             // Start the AckResolver and Begin recieving
             new Thread(CheckClientDisconnections){ IsBackground = true }.Start();
@@ -122,7 +122,7 @@ namespace Server.Networking
                         )
                     );
 
-                    _ackCurrentIndices[endPoint] = ackIndex + 1;
+                    _ackCurrentIndices = _ackCurrentIndices.SetItem(endPoint, ackIndex + 1);
                 }
                 else
                     msgBytes = Encoding.ASCII.GetBytes(Unreliable.CreateString(message));
@@ -202,7 +202,7 @@ namespace Server.Networking
 
                 lock(_listLock)
                 {
-                    _lastMessages[endPoint] = DateTime.UtcNow;
+                    _lastMessages = _lastMessages.SetItem(endPoint, DateTime.UtcNow);
                 }
                 
                 if(!IsListening) continue;
@@ -223,12 +223,12 @@ namespace Server.Networking
                         // Message is reliable, but the ACK index is too low.
                         // Already recieved datagram: simply resend ACK and return
                         case Reliable rel when rel.AckIndex < ackExpected:
-                            SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);   break;
+                            SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);                break;
 
                         // Message is reliable, and was the expected index.
                         // Accept message, send ACK, and invoke MessageRecieved event
                         case Reliable rel:
-                            _ackExpectedIndices[endPoint] = ackExpected + 1;
+                            _ackExpectedIndices = _ackExpectedIndices.SetItem(endPoint, ackExpected + 1);
                             SendMessage(Ack.CreateString(rel.AckIndex), false, endPoint);
                             MessageRecieved.Invoke(null, new DatagramCallback (
                                 Data: rel.Data,
@@ -241,7 +241,7 @@ namespace Server.Networking
                                         ),
                                 SendToAll: (data, isRel) => SendMessage(data, isRel, _ackExpectedIndices
                                             .Keys.ToArray()
-                            )));                                                            break;
+                            )));                                                                         break;
 
                         // Message contains request to resend packages
                         // Resend earliest package
@@ -300,9 +300,12 @@ namespace Server.Networking
                             )));
 
                             // Remove the Client's data from the Server                                
-                            lock(_expectedLock) { _ackExpectedIndices.Remove(pair.Key); }
+                            lock(_expectedLock) 
+                            { 
+                                _ackExpectedIndices = _ackExpectedIndices.Remove(pair.Key); 
+                            }
                             _ackResolver.RemoveClientEndPoint(pair.Key); 
-                            _lastMessages.Remove(pair.Key);
+                            _lastMessages = _lastMessages.Remove(pair.Key);
                         }
                     }
                 }

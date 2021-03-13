@@ -209,7 +209,7 @@ namespace Server.State
         {
             _critterTypeCounts = _critterTypeCounts.SetItem(type, _critterTypeCounts[type] + 1);
 
-            var newCritter = new CritterData(
+            CritterData newCritter = new (
                 Id: _critterId++, Type: type,
                 UpdateTime: DateTime.UtcNow
                     .AddSeconds(_critterInfo.First(_ => _.CritterType == type).SecondsToUpdate)
@@ -219,7 +219,7 @@ namespace Server.State
 
             _critterData = _critterData.Add(newPosition, newCritter);
 
-            return new (
+            return new CritterPlacement (
                 Id: newCritter.Id,
                 Type: newCritter.Type,
                 Position: newPosition

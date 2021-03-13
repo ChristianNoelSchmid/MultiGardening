@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -21,7 +22,7 @@ namespace Server.Networking.Resolvers
         /// it resends the datagram. Acknowledgements that do come remove the
         /// value from the Dictionary.
         /// </summary>
-        private Dictionary<IPEndPoint, List<AckResolverData>> _resolverBuffer;
+        private ImmutableDictionary<IPEndPoint, List<AckResolverData>> _resolverBuffer;
 
         // Lock for the buffer. There are multiple threads which can 
         // retrieve information from it.
@@ -42,7 +43,7 @@ namespace Server.Networking.Resolvers
 
         public AckResolver()
         {
-            _resolverBuffer = new Dictionary<IPEndPoint, List<AckResolverData>>();
+            _resolverBuffer = ImmutableDictionary<IPEndPoint, List<AckResolverData>>.Empty;
             new Thread(StartAckResolver){ IsBackground = true }.Start();
         }
 
@@ -65,7 +66,7 @@ namespace Server.Networking.Resolvers
                 ackList.Add(resolver); 
                 ackList.Sort((ack1, ack2) => ack1.AckIndex.CompareTo(ack2.AckIndex));
 
-                _resolverBuffer[resolver.IPEndPoint] = ackList;
+                _resolverBuffer = _resolverBuffer.SetItem(resolver.IPEndPoint, ackList);
             }
         }
 
@@ -78,7 +79,7 @@ namespace Server.Networking.Resolvers
             lock(_resolverLock)
             {
                 if(_resolverBuffer.ContainsKey(endPoint))
-                    _resolverBuffer.Remove(endPoint);
+                    _resolverBuffer = _resolverBuffer.Remove(endPoint);
             }
         }
 
